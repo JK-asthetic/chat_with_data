@@ -1,0 +1,4949 @@
+[
+  {
+    "question": "What is the total ARR for Q1FY26?",
+    "parts": [
+      {
+        "text": "What is the total ARR for Q1FY26?",
+        "extracted": {
+          "raw_query": "What is the total ARR for Q1FY26?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "Show me Private Access ARR.",
+    "parts": [
+      {
+        "text": "Show me Private Access ARR.",
+        "extracted": {
+          "raw_query": "Show me Private Access ARR.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Private Access"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": null
+        },
+        "where": {},
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "What is HSBC ARR?",
+    "parts": [
+      {
+        "text": "What is HSBC ARR?",
+        "extracted": {
+          "raw_query": "What is HSBC ARR?",
+          "intent": "LOOKUP",
+          "account_raw": "HSBC",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": null
+        },
+        "where": {},
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me EMEA ARR Q1FY26.",
+    "parts": [
+      {
+        "text": "Give me EMEA ARR Q1FY26.",
+        "extracted": {
+          "raw_query": "Give me EMEA ARR Q1FY26.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "What is Internet Access and Platform ARR Q1FY26?",
+    "parts": [
+      {
+        "text": "What is Internet Access and Platform ARR Q1FY26?",
+        "extracted": {
+          "raw_query": "What is Internet Access and Platform ARR Q1FY26?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Internet Access"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "ZIA"
+        },
+        "group_by": [
+          "product_l1"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show ARR for large enterprise accounts.",
+    "parts": [
+      {
+        "text": "Show ARR for large enterprise accounts.",
+        "extracted": {
+          "raw_query": "Show ARR for large enterprise accounts.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [
+            "large enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [
+            "Large Enterprise"
+          ],
+          "products": [],
+          "fiscal": null
+        },
+        "where": {
+          "market_segment": "Large Enterprise"
+        },
+        "group_by": [
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is Digital Experience ARR?",
+    "parts": [
+      {
+        "text": "What is Digital Experience ARR?",
+        "extracted": {
+          "raw_query": "What is Digital Experience ARR?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Digital Experience"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [
+            "Digital Experience"
+          ],
+          "fiscal": null
+        },
+        "where": {
+          "product_l1": "Digital Experience"
+        },
+        "group_by": [
+          "product_l1"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me APAC ARR Q2FY26.",
+    "parts": [
+      {
+        "text": "Give me APAC ARR Q2FY26.",
+        "extracted": {
+          "raw_query": "Give me APAC ARR Q2FY26.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "APAC"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q2FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q2"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "APJ"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q2"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q2",
+          "end_user_parent_geo": "APJ"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "What is Siemens ARR Q1FY26?",
+    "parts": [
+      {
+        "text": "What is Siemens ARR Q1FY26?",
+        "extracted": {
+          "raw_query": "What is Siemens ARR Q1FY26?",
+          "intent": "LOOKUP",
+          "account_raw": "Siemens",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me total ARR for enterprise accounts Q1FY26.",
+    "parts": [
+      {
+        "text": "Show me total ARR for enterprise accounts Q1FY26.",
+        "extracted": {
+          "raw_query": "Show me total ARR for enterprise accounts Q1FY26.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is Private Access and Digital Experience ARR for EMEA Q1FY26?",
+    "parts": [
+      {
+        "text": "What is Private Access and Digital Experience ARR for EMEA Q1FY26?",
+        "extracted": {
+          "raw_query": "What is Private Access and Digital Experience ARR for EMEA Q1FY26?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Private Access",
+            "Digital Experience"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [
+            "Digital Experience"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "Digital Experience",
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": [
+          "product_l1"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me top 10 accounts by ARR in Q1FY26.",
+    "parts": [
+      {
+        "text": "Show me top 10 accounts by ARR in Q1FY26.",
+        "extracted": {
+          "raw_query": "Show me top 10 accounts by ARR in Q1FY26.",
+          "intent": "RANK",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "top",
+          "limit_n": 10,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is ARR breakdown by product for HSBC Q1FY26?",
+    "parts": [
+      {
+        "text": "What is ARR breakdown by product for HSBC Q1FY26?",
+        "extracted": {
+          "raw_query": "What is ARR breakdown by product for HSBC Q1FY26?",
+          "intent": "LOOKUP",
+          "account_raw": "HSBC",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me Data Security ARR for enterprise accounts EMEA Q1FY26.",
+    "parts": [
+      {
+        "text": "Give me Data Security ARR for enterprise accounts EMEA Q1FY26.",
+        "extracted": {
+          "raw_query": "Give me Data Security ARR for enterprise accounts EMEA Q1FY26.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Data Security"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [
+            "Data Security"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "Data Security",
+          "end_user_parent_geo": "EMEA",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "product_l1",
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Which accounts have Private Access ARR above 1M in EMEA Q1FY26?",
+    "parts": [
+      {
+        "text": "Which accounts have Private Access ARR above 1M in EMEA Q1FY26?",
+        "extracted": {
+          "raw_query": "Which accounts have Private Access ARR above 1M in EMEA Q1FY26?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Private Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "Show me top 5 accounts by Internet Access ARR in EMEA Q1FY26.",
+    "parts": [
+      {
+        "text": "Show me top 5 accounts by Internet Access ARR in EMEA Q1FY26.",
+        "extracted": {
+          "raw_query": "Show me top 5 accounts by Internet Access ARR in EMEA Q1FY26.",
+          "intent": "RANK",
+          "account_raw": null,
+          "products_raw": [
+            "Internet Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "top",
+          "limit_n": 5,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "ZIA",
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is AI Security ARR for enterprise accounts across all geos Q1FY26?",
+    "parts": [
+      {
+        "text": "What is AI Security ARR for enterprise accounts across all geos Q1FY26?",
+        "extracted": {
+          "raw_query": "What is AI Security ARR for enterprise accounts across all geos Q1FY26?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me ARR for Siemens and Toyota Q1FY26.",
+    "parts": [
+      {
+        "text": "Give me ARR for Siemens and Toyota Q1FY26.",
+        "extracted": {
+          "raw_query": "Give me ARR for Siemens and Toyota Q1FY26.",
+          "intent": "LOOKUP",
+          "account_raw": "Siemens",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is the ARR split between Private Access and Internet Access for APAC Q1FY26?",
+    "parts": [
+      {
+        "text": "What is the ARR split between Private Access and Internet Access for APAC Q1FY26?",
+        "extracted": {
+          "raw_query": "What is the ARR split between Private Access and Internet Access for APAC Q1FY26?",
+          "intent": "COMPARE",
+          "account_raw": null,
+          "products_raw": [
+            "Internet Access",
+            "Private Access"
+          ],
+          "geo_raw": [
+            "APAC"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "APJ"
+          ],
+          "segment": [],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "ZIA",
+          "end_user_parent_geo": "APJ"
+        },
+        "group_by": [
+          "product_l1",
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show bottom 10 accounts by ARR in AMER large enterprise Q1FY26.",
+    "parts": [
+      {
+        "text": "Show bottom 10 accounts by ARR in AMER large enterprise Q1FY26.",
+        "extracted": {
+          "raw_query": "Show bottom 10 accounts by ARR in AMER large enterprise Q1FY26.",
+          "intent": "RANK",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "AMER"
+          ],
+          "segment_raw": [
+            "large enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "bottom",
+          "limit_n": 10,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "Americas"
+          ],
+          "segment": [
+            "Large Enterprise"
+          ],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo": "Americas",
+          "market_segment": "Large Enterprise"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Which top 10 EMEA enterprise accounts had the highest ARR growth from Q4FY25 to Q1FY26?",
+    "parts": [
+      {
+        "text": "Which top 10 EMEA enterprise accounts had the highest ARR growth from Q4FY25 to Q1FY26?",
+        "extracted": {
+          "raw_query": "Which top 10 EMEA enterprise accounts had the highest ARR growth from Q4FY25 to Q1FY26?",
+          "intent": "DELTA",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q4FY25 to Q1FY26",
+          "operator": "top",
+          "limit_n": 10,
+          "missing_critical": [],
+          "fiscal_year": "FY 2025",
+          "fiscal_quarter": "FY 2025 Q4"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [],
+          "fiscal": "FY 2025 Q4"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2025 Q4",
+          "end_user_parent_geo": "EMEA",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "market_segment",
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me accounts where Internet Access ARR increased but Private Access ARR decreased Q1FY26.",
+    "parts": [
+      {
+        "text": "Show me accounts where Internet Access ARR increased but Private Access ARR decreased Q1FY26.",
+        "extracted": {
+          "raw_query": "Show me accounts where Internet Access ARR increased but Private Access ARR decreased Q1FY26.",
+          "intent": "RISK",
+          "account_raw": null,
+          "products_raw": [
+            "Internet Access",
+            "Private Access"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "ZIA"
+        },
+        "group_by": [
+          "product_l1",
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is the QoQ ARR change for enterprise accounts in APAC from Q4FY25 to Q1FY26?",
+    "parts": [
+      {
+        "text": "What is the QoQ ARR change for enterprise accounts in APAC from Q4FY25 to Q1FY26?",
+        "extracted": {
+          "raw_query": "What is the QoQ ARR change for enterprise accounts in APAC from Q4FY25 to Q1FY26?",
+          "intent": "DELTA",
+          "account_raw": "QoQ",
+          "products_raw": [],
+          "geo_raw": [
+            "APAC"
+          ],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q4FY25 to Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2025",
+          "fiscal_quarter": "FY 2025 Q4"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "APJ"
+          ],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [],
+          "fiscal": "FY 2025 Q4"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2025 Q4",
+          "end_user_parent_geo": "APJ",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "market_segment",
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me ARR trend for Private Access enterprise accounts in EMEA over last 4 quarters.",
+    "parts": [
+      {
+        "text": "Give me ARR trend for Private Access enterprise accounts in EMEA over last 4 quarters.",
+        "extracted": {
+          "raw_query": "Give me ARR trend for Private Access enterprise accounts in EMEA over last 4 quarters.",
+          "intent": "TREND",
+          "account_raw": null,
+          "products_raw": [
+            "Private Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "last 4 quarters",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [],
+          "fiscal": [
+            "FY 2026 Q2",
+            "FY 2026 Q3",
+            "FY 2026 Q4",
+            "FY 2027 Q1"
+          ]
+        },
+        "where": {
+          "fiscal_quarter__in": [
+            "FY 2026 Q2",
+            "FY 2026 Q3",
+            "FY 2026 Q4",
+            "FY 2027 Q1"
+          ],
+          "end_user_parent_geo": "EMEA",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Compare Internet Access vs Private Access ARR for top 10 accounts in EMEA Q1FY26.",
+    "parts": [
+      {
+        "text": "Compare Internet Access vs Private Access ARR for top 10 accounts in EMEA Q1FY26.",
+        "extracted": {
+          "raw_query": "Compare Internet Access vs Private Access ARR for top 10 accounts in EMEA Q1FY26.",
+          "intent": "COMPARE",
+          "account_raw": null,
+          "products_raw": [
+            "Internet Access",
+            "Private Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "top",
+          "limit_n": 10,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "ZIA",
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": [
+          "product_l1",
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Which accounts have Internet Access ARR but no Private Access ARR in EMEA enterprise Q1FY26?",
+    "parts": [
+      {
+        "text": "Which accounts have Internet Access ARR but no Private Access ARR in EMEA enterprise Q1FY26?",
+        "extracted": {
+          "raw_query": "Which accounts have Internet Access ARR but no Private Access ARR in EMEA enterprise Q1FY26?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Internet Access",
+            "Private Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "ZIA",
+          "end_user_parent_geo": "EMEA",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "product_l1",
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me bottom 10 accounts by ARR growth rate in APAC large enterprise Q1FY26.",
+    "parts": [
+      {
+        "text": "Show me bottom 10 accounts by ARR growth rate in APAC large enterprise Q1FY26.",
+        "extracted": {
+          "raw_query": "Show me bottom 10 accounts by ARR growth rate in APAC large enterprise Q1FY26.",
+          "intent": "DELTA",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "APAC"
+          ],
+          "segment_raw": [
+            "large enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "bottom",
+          "limit_n": 10,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "APJ"
+          ],
+          "segment": [
+            "Large Enterprise"
+          ],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo": "APJ",
+          "market_segment": "Large Enterprise"
+        },
+        "group_by": [
+          "market_segment",
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me Internet Access, Private Access and Digital Experience ARR breakdown for Siemens and HSBC in Q1FY26.",
+    "parts": [
+      {
+        "text": "Give me Internet Access, Private Access and Digital Experience ARR breakdown for Siemens and HSBC in Q1FY26.",
+        "extracted": {
+          "raw_query": "Give me Internet Access, Private Access and Digital Experience ARR breakdown for Siemens and HSBC in Q1FY26.",
+          "intent": "LOOKUP",
+          "account_raw": "Siemens",
+          "products_raw": [
+            "Internet Access",
+            "Private Access",
+            "Digital Experience"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [
+            "ZIA",
+            "Digital Experience"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1__in": [
+            "ZIA",
+            "Digital Experience"
+          ]
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is total ARR for accounts renewing in Q2FY26 across EMEA?",
+    "parts": [
+      {
+        "text": "What is total ARR for accounts renewing in Q2FY26 across EMEA?",
+        "extracted": {
+          "raw_query": "What is total ARR for accounts renewing in Q2FY26 across EMEA?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q2FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q2"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q2"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q2",
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "Show me top 10 EMEA enterprise accounts by Private Access ARR in Q1FY26 that also have Internet Access ARR above 2M but had a QoQ ARR decline on Internet Access from Q4FY25.",
+    "parts": [
+      {
+        "text": "Show me top 10 EMEA enterprise accounts by Private Access ARR in Q1FY26 that also have Internet Access ARR above 2M but had a QoQ ARR decline on Internet Access from Q4FY25.",
+        "extracted": {
+          "raw_query": "Show me top 10 EMEA enterprise accounts by Private Access ARR in Q1FY26 that also have Internet Access ARR above 2M but had a QoQ ARR decline on Internet Access from Q4FY25.",
+          "intent": "RISK",
+          "account_raw": "QoQ",
+          "products_raw": [
+            "Internet Access",
+            "Private Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26 vs Q4FY25",
+          "operator": "top",
+          "limit_n": 10,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "ZIA",
+          "end_user_parent_geo": "EMEA",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "product_l1",
+          "market_segment",
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Which major accounts in APAC grew Private Access ARR by more than 20% QoQ in Q1FY26 but have Digital Experience ARR below 100K \u2014 potential Digital Experience upsell targets.",
+    "parts": [
+      {
+        "text": "Which major accounts in APAC grew Private Access ARR by more than 20% QoQ in Q1FY26 but have Digital Experience ARR below 100K \u2014 potential Digital Experience upsell targets.?",
+        "extracted": {
+          "raw_query": "Which major accounts in APAC grew Private Access ARR by more than 20% QoQ in Q1FY26 but have Digital Experience ARR below 100K \u2014 potential Digital Experience upsell targets.?",
+          "intent": "DELTA",
+          "account_raw": "grew",
+          "products_raw": [
+            "Private Access",
+            "Digital Experience"
+          ],
+          "geo_raw": [
+            "APAC"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "APJ"
+          ],
+          "segment": [],
+          "products": [
+            "Digital Experience"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "Digital Experience",
+          "end_user_parent_geo": "APJ"
+        },
+        "group_by": [
+          "product_l1",
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Compare total platform ARR for enterprise in EMEA and APAC for Q1FY27 vs Q1FY26 \u2014 show YoY growth rate per segment per geo.",
+    "parts": [
+      {
+        "text": "Compare total platform ARR for enterprise in EMEA and APAC for Q1FY27 vs Q1FY26 \u2014 show YoY growth rate per segment per geo.",
+        "extracted": {
+          "raw_query": "Compare total platform ARR for enterprise in EMEA and APAC for Q1FY27 vs Q1FY26 \u2014 show YoY growth rate per segment per geo.",
+          "intent": "COMPARE",
+          "account_raw": "YoY",
+          "products_raw": [],
+          "geo_raw": [
+            "APAC",
+            "EMEA"
+          ],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY27 vs Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2027",
+          "fiscal_quarter": "FY 2027 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "APJ",
+            "EMEA"
+          ],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [],
+          "fiscal": "FY 2027 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2027 Q1",
+          "end_user_parent_geo__in": [
+            "APJ",
+            "EMEA"
+          ],
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "end_user_parent_geo",
+          "market_segment",
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me accounts with consecutive ARR decline across last 3 quarters on Internet Access in EMEA enterprise \u2014 ranked by total ARR lost.",
+    "parts": [
+      {
+        "text": "Give me accounts with consecutive ARR decline across last 3 quarters on Internet Access in EMEA enterprise \u2014 ranked by total ARR lost.",
+        "extracted": {
+          "raw_query": "Give me accounts with consecutive ARR decline across last 3 quarters on Internet Access in EMEA enterprise \u2014 ranked by total ARR lost.",
+          "intent": "RISK",
+          "account_raw": null,
+          "products_raw": [
+            "Internet Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "last 3 quarters",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": [
+            "FY 2026 Q3",
+            "FY 2026 Q4",
+            "FY 2027 Q1"
+          ]
+        },
+        "where": {
+          "fiscal_quarter__in": [
+            "FY 2026 Q3",
+            "FY 2026 Q4",
+            "FY 2027 Q1"
+          ],
+          "product_l1": "ZIA",
+          "end_user_parent_geo": "EMEA",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "product_l1",
+          "market_segment",
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show ARR contribution of Internet Access vs Private Access vs Digital Experience as a percentage of total account ARR for top 20 accounts in EMEA Q1FY26 \u2014 flag accounts where Internet Access is above 80%.",
+    "parts": [
+      {
+        "text": "Show ARR contribution of Internet Access vs Private Access vs Digital Experience as a percentage of total account ARR for top 20 accounts in EMEA Q1FY26 \u2014 flag accounts where Internet Access is above 80%.",
+        "extracted": {
+          "raw_query": "Show ARR contribution of Internet Access vs Private Access vs Digital Experience as a percentage of total account ARR for top 20 accounts in EMEA Q1FY26 \u2014 flag accounts where Internet Access is above 80%.",
+          "intent": "COMPARE",
+          "account_raw": null,
+          "products_raw": [
+            "Internet Access",
+            "Private Access",
+            "Digital Experience"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "top",
+          "limit_n": 20,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [
+            "ZIA",
+            "Digital Experience"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1__in": [
+            "ZIA",
+            "Digital Experience"
+          ],
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": [
+          "product_l1",
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Which EMEA large enterprise accounts had ARR expansion on Private Access but downsell on Internet Access in Q1FY26 and what is the net ARR impact per account?",
+    "parts": [
+      {
+        "text": "Which EMEA large enterprise accounts had ARR expansion on Private Access but downsell on Internet Access in Q1FY26?",
+        "extracted": {
+          "raw_query": "Which EMEA large enterprise accounts had ARR expansion on Private Access but downsell on Internet Access in Q1FY26?",
+          "intent": "RISK",
+          "account_raw": null,
+          "products_raw": [
+            "Internet Access",
+            "Private Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [
+            "large enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "CHURN",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [
+            "Large Enterprise"
+          ],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "ZIA",
+          "end_user_parent_geo": "EMEA",
+          "market_segment": "Large Enterprise"
+        },
+        "group_by": [
+          "product_l1",
+          "market_segment",
+          "end_user_name"
+        ]
+      },
+      {
+        "text": "What is the net ARR impact per account? on Internet Access on Private Access in EMEA for large enterprise in Q1FY26",
+        "extracted": {
+          "raw_query": "What is the net ARR impact per account? on Internet Access on Private Access in EMEA for large enterprise in Q1FY26",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Internet Access",
+            "Private Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [
+            "large enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [
+            "Large Enterprise"
+          ],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "ZIA",
+          "end_user_parent_geo": "EMEA",
+          "market_segment": "Large Enterprise"
+        },
+        "group_by": [
+          "product_l1",
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me top 5 accounts per geo by Private Access ARR growth rate in Q1FY26 \u2014 exclude accounts with total ARR below 500K \u2014 enterprise and large enterprise only.",
+    "parts": [
+      {
+        "text": "Give me top 5 accounts per geo by Private Access ARR growth rate in Q1FY26 \u2014 exclude accounts with total ARR below 500K \u2014 enterprise and large enterprise only.",
+        "extracted": {
+          "raw_query": "Give me top 5 accounts per geo by Private Access ARR growth rate in Q1FY26 \u2014 exclude accounts with total ARR below 500K \u2014 enterprise and large enterprise only.",
+          "intent": "DELTA",
+          "account_raw": null,
+          "products_raw": [
+            "Private Access"
+          ],
+          "geo_raw": [],
+          "segment_raw": [
+            "large enterprise",
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "top",
+          "limit_n": 5,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [
+            "Large Enterprise",
+            "Enterprise"
+          ],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "market_segment__in": [
+            "Large Enterprise",
+            "Enterprise"
+          ]
+        },
+        "group_by": [
+          "market_segment",
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Compare ARR for HSBC, Siemens, Deutsche Bank and Toyota across Internet Access, Private Access, Digital Experience and Data Security for Q1FY26 and Q2FY26 \u2014 show QoQ delta per product per account.",
+    "parts": [
+      {
+        "text": "Compare ARR for HSBC and Toyota across Internet Access, Private Access, Digital Experience and Data Security for Q1FY26 and Q2FY26 \u2014 show QoQ delta per product per account.",
+        "extracted": {
+          "raw_query": "Compare ARR for HSBC and Toyota across Internet Access, Private Access, Digital Experience and Data Security for Q1FY26 and Q2FY26 \u2014 show QoQ delta per product per account.",
+          "intent": "COMPARE",
+          "account_raw": "HSBC",
+          "products_raw": [
+            "Internet Access",
+            "Private Access",
+            "Digital Experience",
+            "Data Security"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26 and Q2FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [
+            "ZIA",
+            "Digital Experience",
+            "Data Security"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1__in": [
+            "ZIA",
+            "Digital Experience",
+            "Data Security"
+          ]
+        },
+        "group_by": [
+          "product_l1",
+          "end_user_name"
+        ]
+      },
+      {
+        "text": "Compare ARR for Siemens and Toyota across Internet Access, Private Access, Digital Experience and Data Security for Q1FY26 and Q2FY26 \u2014 show QoQ delta per product per account.",
+        "extracted": {
+          "raw_query": "Compare ARR for Siemens and Toyota across Internet Access, Private Access, Digital Experience and Data Security for Q1FY26 and Q2FY26 \u2014 show QoQ delta per product per account.",
+          "intent": "COMPARE",
+          "account_raw": "Siemens",
+          "products_raw": [
+            "Internet Access",
+            "Private Access",
+            "Digital Experience",
+            "Data Security"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26 and Q2FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [
+            "ZIA",
+            "Digital Experience",
+            "Data Security"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1__in": [
+            "ZIA",
+            "Digital Experience",
+            "Data Security"
+          ]
+        },
+        "group_by": [
+          "product_l1",
+          "end_user_name"
+        ]
+      },
+      {
+        "text": "Compare ARR for Deutsche Bank and Toyota across Internet Access, Private Access, Digital Experience and Data Security for Q1FY26 and Q2FY26 \u2014 show QoQ delta per product per account.",
+        "extracted": {
+          "raw_query": "Compare ARR for Deutsche Bank and Toyota across Internet Access, Private Access, Digital Experience and Data Security for Q1FY26 and Q2FY26 \u2014 show QoQ delta per product per account.",
+          "intent": "COMPARE",
+          "account_raw": "Deutsche Bank",
+          "products_raw": [
+            "Internet Access",
+            "Private Access",
+            "Digital Experience",
+            "Data Security"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26 and Q2FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": "Deutsche Bank",
+          "geo": [],
+          "segment": [],
+          "products": [
+            "ZIA",
+            "Digital Experience",
+            "Data Security"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1__in": [
+            "ZIA",
+            "Digital Experience",
+            "Data Security"
+          ],
+          "account_id": "0010g00001k9Ig5AAE"
+        },
+        "group_by": [
+          "product_l1",
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Which accounts have high Internet Access ARR above 3M but zero Private Access ARR in EMEA enterprise Q1FY26 \u2014 rank by Internet Access ARR and show renewal quarter as upsell priority list.",
+    "parts": [
+      {
+        "text": "Which accounts have high Internet Access ARR above 3M but zero Private Access ARR in EMEA enterprise Q1FY26 \u2014 rank by Internet Access ARR?",
+        "extracted": {
+          "raw_query": "Which accounts have high Internet Access ARR above 3M but zero Private Access ARR in EMEA enterprise Q1FY26 \u2014 rank by Internet Access ARR?",
+          "intent": "LOOKUP",
+          "account_raw": "high",
+          "products_raw": [
+            "Internet Access",
+            "Private Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "ZIA",
+          "end_user_parent_geo": "EMEA",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      },
+      {
+        "text": "Show renewal quarter as upsell priority list. for high on Internet Access on Private Access in EMEA for enterprise in Q1FY26 ARR",
+        "extracted": {
+          "raw_query": "Show renewal quarter as upsell priority list. for high on Internet Access on Private Access in EMEA for enterprise in Q1FY26 ARR",
+          "intent": "LOOKUP",
+          "account_raw": "high",
+          "products_raw": [
+            "Internet Access",
+            "Private Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "ZIA",
+          "end_user_parent_geo": "EMEA",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me AI Security and Data Security ARR for EMEA and APAC large enterprise in Q1FY26 \u2014 compare both products QoQ vs Q4FY25 and flag any account where combined ARR dropped more than 10% with their renewal quarter.",
+    "parts": [
+      {
+        "text": "Show me AI Security and Data Security ARR for EMEA and APAC large enterprise in Q1FY26 \u2014 compare both products QoQ vs Q4FY25 and flag any account where combined ARR dropped more than 10% with their renewal quarter.",
+        "extracted": {
+          "raw_query": "Show me AI Security and Data Security ARR for EMEA and APAC large enterprise in Q1FY26 \u2014 compare both products QoQ vs Q4FY25 and flag any account where combined ARR dropped more than 10% with their renewal quarter.",
+          "intent": "RISK",
+          "account_raw": "combined",
+          "products_raw": [
+            "Data Security"
+          ],
+          "geo_raw": [
+            "APAC",
+            "EMEA"
+          ],
+          "segment_raw": [
+            "large enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26 vs Q4FY25",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "APJ",
+            "EMEA"
+          ],
+          "segment": [
+            "Large Enterprise"
+          ],
+          "products": [
+            "Data Security"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "Data Security",
+          "end_user_parent_geo__in": [
+            "APJ",
+            "EMEA"
+          ],
+          "market_segment": "Large Enterprise"
+        },
+        "group_by": [
+          "product_l1",
+          "end_user_parent_geo",
+          "market_segment",
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me ARR.",
+    "parts": [
+      {
+        "text": "Show me ARR.",
+        "extracted": {
+          "raw_query": "Show me ARR.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": null
+        },
+        "where": {},
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "What is Private Access ARR?",
+    "parts": [
+      {
+        "text": "What is Private Access ARR?",
+        "extracted": {
+          "raw_query": "What is Private Access ARR?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Private Access"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": null
+        },
+        "where": {},
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "Give me EMEA ARR.",
+    "parts": [
+      {
+        "text": "Give me EMEA ARR.",
+        "extracted": {
+          "raw_query": "Give me EMEA ARR.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": null
+        },
+        "where": {
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "What is HSBC revenue?",
+    "parts": [
+      {
+        "text": "What is HSBC revenue?",
+        "extracted": {
+          "raw_query": "What is HSBC revenue?",
+          "intent": "LOOKUP",
+          "account_raw": "HSBC",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": null
+        },
+        "where": {},
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me top 10 accounts.",
+    "parts": [
+      {
+        "text": "Show me top 10 accounts.",
+        "extracted": {
+          "raw_query": "Show me top 10 accounts.",
+          "intent": "RANK",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": "top",
+          "limit_n": 10,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": null
+        },
+        "where": {},
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is enterprise ARR?",
+    "parts": [
+      {
+        "text": "What is enterprise ARR?",
+        "extracted": {
+          "raw_query": "What is enterprise ARR?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [],
+          "fiscal": null
+        },
+        "where": {
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me Q1FY26 ARR.",
+    "parts": [
+      {
+        "text": "Give me Q1FY26 ARR.",
+        "extracted": {
+          "raw_query": "Give me Q1FY26 ARR.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "How is Siemens doing?",
+    "parts": [
+      {
+        "text": "How is Siemens doing?",
+        "extracted": {
+          "raw_query": "How is Siemens doing?",
+          "intent": "LOOKUP",
+          "account_raw": "Siemens",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": null
+        },
+        "where": {},
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me large enterprise numbers.",
+    "parts": [
+      {
+        "text": "Show me large enterprise numbers.",
+        "extracted": {
+          "raw_query": "Show me large enterprise numbers.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [
+            "large enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [
+            "Large Enterprise"
+          ],
+          "products": [],
+          "fiscal": null
+        },
+        "where": {
+          "market_segment": "Large Enterprise"
+        },
+        "group_by": [
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is Digital Experience performance?",
+    "parts": [
+      {
+        "text": "What is Digital Experience performance?",
+        "extracted": {
+          "raw_query": "What is Digital Experience performance?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Digital Experience"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [
+            "Digital Experience"
+          ],
+          "fiscal": null
+        },
+        "where": {
+          "product_l1": "Digital Experience"
+        },
+        "group_by": [
+          "product_l1"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is ZIA ARR?",
+    "parts": [
+      {
+        "text": "What is ZIA ARR?",
+        "extracted": {
+          "raw_query": "What is ZIA ARR?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "ZIA"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": null
+        },
+        "where": {
+          "product_l1": "ZIA"
+        },
+        "group_by": [
+          "product_l1"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is ZPA ARR for EMEA this year?",
+    "parts": [
+      {
+        "text": "What is ZPA ARR for EMEA this year?",
+        "extracted": {
+          "raw_query": "What is ZPA ARR for EMEA this year?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "ZPA"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "this year",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [
+            "ZPA"
+          ],
+          "fiscal": "FY 2027"
+        },
+        "where": {
+          "fiscal_year": "FY 2027",
+          "product_l1": "ZPA",
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": [
+          "product_l1"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me ZTNA revenue Q1FY26.",
+    "parts": [
+      {
+        "text": "Give me ZTNA revenue Q1FY26.",
+        "extracted": {
+          "raw_query": "Give me ZTNA revenue Q1FY26.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "ZTNA"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [
+            "ZPA"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "ZPA"
+        },
+        "group_by": [
+          "product_l1"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me APAC numbers for Q1FY26.",
+    "parts": [
+      {
+        "text": "Show me APAC numbers for Q1FY26.",
+        "extracted": {
+          "raw_query": "Show me APAC numbers for Q1FY26.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "APAC"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "APJ"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo": "APJ"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "What is Zscaler ARR?",
+    "parts": [
+      {
+        "text": "What is Zscaler ARR?",
+        "extracted": {
+          "raw_query": "What is Zscaler ARR?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": null
+        },
+        "where": {},
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "Give me SWG and CASB ARR Q1FY26.",
+    "parts": [
+      {
+        "text": "Give me SWG and CASB ARR Q1FY26.",
+        "extracted": {
+          "raw_query": "Give me SWG and CASB ARR Q1FY26.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "CASB",
+            "SWG"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [
+            "Data Security > SaaS Security > CASB",
+            "ZIA > SWG"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "__or__": [
+            {
+              "product_l1": "Data Security",
+              "product_l2": "SaaS Security",
+              "product_l3": "CASB"
+            },
+            {
+              "product_l1": "ZIA",
+              "product_l2": "SWG"
+            }
+          ]
+        },
+        "group_by": [
+          "product_l1",
+          "product_l2",
+          "product_l3"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me ARR for major accounts EMEA.",
+    "parts": [
+      {
+        "text": "Show me ARR for major accounts EMEA.",
+        "extracted": {
+          "raw_query": "Show me ARR for major accounts EMEA.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": null
+        },
+        "where": {
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "What is the ARR for our top product Q1FY26?",
+    "parts": [
+      {
+        "text": "What is the ARR for our top product Q1FY26?",
+        "extracted": {
+          "raw_query": "What is the ARR for our top product Q1FY26?",
+          "intent": "RANK",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "top",
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me DLP numbers last quarter.",
+    "parts": [
+      {
+        "text": "Give me DLP numbers last quarter.",
+        "extracted": {
+          "raw_query": "Give me DLP numbers last quarter.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "last quarter",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q4"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q4"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "How much are we making from cloud security?",
+    "parts": [
+      {
+        "text": "How much are we making from cloud security?",
+        "extracted": {
+          "raw_query": "How much are we making from cloud security?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": null
+        },
+        "where": {},
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "What is EMEA ARR for Q1FY26 and Q2FY26?",
+    "parts": [
+      {
+        "text": "What is EMEA ARR for Q1FY26 and Q2FY26?",
+        "extracted": {
+          "raw_query": "What is EMEA ARR for Q1FY26 and Q2FY26?",
+          "intent": "COMPARE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26 and Q2FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me top 10 and bottom 10 accounts by Private Access ARR in EMEA Q1FY26.",
+    "parts": [
+      {
+        "text": "Show me top 10 accounts by Private Access ARR in EMEA Q1FY26.",
+        "extracted": {
+          "raw_query": "Show me top 10 accounts by Private Access ARR in EMEA Q1FY26.",
+          "intent": "RANK",
+          "account_raw": null,
+          "products_raw": [
+            "Private Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "top",
+          "limit_n": 10,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      },
+      {
+        "text": "Bottom 10 accounts by Private Access ARR in EMEA Q1FY26.",
+        "extracted": {
+          "raw_query": "Bottom 10 accounts by Private Access ARR in EMEA Q1FY26.",
+          "intent": "RANK",
+          "account_raw": null,
+          "products_raw": [
+            "Private Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "bottom",
+          "limit_n": 10,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is Private Access ARR for enterprise and all segments Q1FY26?",
+    "parts": [
+      {
+        "text": "What is Private Access ARR for enterprise and all segments Q1FY26?",
+        "extracted": {
+          "raw_query": "What is Private Access ARR for enterprise and all segments Q1FY26?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Private Access"
+          ],
+          "geo_raw": [],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me ARR for EMEA and all geos Q1FY26.",
+    "parts": [
+      {
+        "text": "Give me ARR for EMEA and all geos Q1FY26.",
+        "extracted": {
+          "raw_query": "Give me ARR for EMEA and all geos Q1FY26.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "Show me ARR growth and ARR total for HSBC Q1FY26.",
+    "parts": [
+      {
+        "text": "Show me ARR growth and ARR total for HSBC Q1FY26.",
+        "extracted": {
+          "raw_query": "Show me ARR growth and ARR total for HSBC Q1FY26.",
+          "intent": "DELTA",
+          "account_raw": "HSBC",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is Private Access ARR in EMEA for Siemens globally?",
+    "parts": [
+      {
+        "text": "What is Private Access ARR in EMEA for Siemens globally?",
+        "extracted": {
+          "raw_query": "What is Private Access ARR in EMEA for Siemens globally?",
+          "intent": "LOOKUP",
+          "account_raw": "Siemens",
+          "products_raw": [
+            "Private Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": null,
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": null
+        },
+        "where": {
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me last quarter and this quarter ARR for Digital Experience EMEA.",
+    "parts": [
+      {
+        "text": "Give me last quarter and this quarter ARR for Digital Experience EMEA.",
+        "extracted": {
+          "raw_query": "Give me last quarter and this quarter ARR for Digital Experience EMEA.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Digital Experience"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "last quarter",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [
+            "Digital Experience"
+          ],
+          "fiscal": "FY 2026 Q4"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q4",
+          "product_l1": "Digital Experience",
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": [
+          "product_l1"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me all ARR for no specific product in Q1FY26 enterprise.",
+    "parts": [
+      {
+        "text": "Show me all ARR for no specific product in Q1FY26 enterprise.",
+        "extracted": {
+          "raw_query": "Show me all ARR for no specific product in Q1FY26 enterprise.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is the ARR for Private Access in EMEA, AMER and globally for Q1FY26?",
+    "parts": [
+      {
+        "text": "What is the ARR for Private Access in EMEA, AMER and globally for Q1FY26?",
+        "extracted": {
+          "raw_query": "What is the ARR for Private Access in EMEA, AMER and globally for Q1FY26?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Private Access"
+          ],
+          "geo_raw": [
+            "AMER",
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "Americas",
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo__in": [
+            "Americas",
+            "EMEA"
+          ]
+        },
+        "group_by": [
+          "end_user_parent_geo"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me Internet Access ARR for Siemens in EMEA but their global number as well Q1FY26.",
+    "parts": [
+      {
+        "text": "Give me Internet Access ARR for Siemens in EMEA but their global number as well Q1FY26.",
+        "extracted": {
+          "raw_query": "Give me Internet Access ARR for Siemens in EMEA but their global number as well Q1FY26.",
+          "intent": "LOOKUP",
+          "account_raw": "Siemens",
+          "products_raw": [
+            "Internet Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "ZIA",
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me ARR by product for Q1FY26.",
+    "parts": [
+      {
+        "text": "Show me ARR by product for Q1FY26.",
+        "extracted": {
+          "raw_query": "Show me ARR by product for Q1FY26.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "What is EMEA ARR Q1FY26?",
+    "parts": [
+      {
+        "text": "What is EMEA ARR Q1FY26?",
+        "extracted": {
+          "raw_query": "What is EMEA ARR Q1FY26?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "Give me ARR breakdown by geo Q1FY26.",
+    "parts": [
+      {
+        "text": "Give me ARR breakdown by geo Q1FY26.",
+        "extracted": {
+          "raw_query": "Give me ARR breakdown by geo Q1FY26.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "What is large enterprise ARR Q1FY26?",
+    "parts": [
+      {
+        "text": "What is large enterprise ARR Q1FY26?",
+        "extracted": {
+          "raw_query": "What is large enterprise ARR Q1FY26?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [
+            "large enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [
+            "Large Enterprise"
+          ],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "market_segment": "Large Enterprise"
+        },
+        "group_by": [
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me Private Access ARR across all geos Q1FY26.",
+    "parts": [
+      {
+        "text": "Show me Private Access ARR across all geos Q1FY26.",
+        "extracted": {
+          "raw_query": "Show me Private Access ARR across all geos Q1FY26.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Private Access"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "What is total ARR for EMEA enterprise Q1FY26?",
+    "parts": [
+      {
+        "text": "What is total ARR for EMEA enterprise Q1FY26?",
+        "extracted": {
+          "raw_query": "What is total ARR for EMEA enterprise Q1FY26?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo": "EMEA",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me QoQ ARR change from Q4FY25 to Q1FY26.",
+    "parts": [
+      {
+        "text": "Give me QoQ ARR change from Q4FY25 to Q1FY26.",
+        "extracted": {
+          "raw_query": "Give me QoQ ARR change from Q4FY25 to Q1FY26.",
+          "intent": "DELTA",
+          "account_raw": "QoQ",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q4FY25 to Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2025",
+          "fiscal_quarter": "FY 2025 Q4"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2025 Q4"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2025 Q4"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Which product had highest ARR Q1FY26?",
+    "parts": [
+      {
+        "text": "Which product had highest ARR Q1FY26?",
+        "extracted": {
+          "raw_query": "Which product had highest ARR Q1FY26?",
+          "intent": "RANK",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "top",
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me ARR by segment Q1FY26.",
+    "parts": [
+      {
+        "text": "Show me ARR by segment Q1FY26.",
+        "extracted": {
+          "raw_query": "Show me ARR by segment Q1FY26.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "What is Internet Access ARR for EMEA enterprise Q1FY26?",
+    "parts": [
+      {
+        "text": "What is Internet Access ARR for EMEA enterprise Q1FY26?",
+        "extracted": {
+          "raw_query": "What is Internet Access ARR for EMEA enterprise Q1FY26?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Internet Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "ZIA",
+          "end_user_parent_geo": "EMEA",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "product_l1",
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me top 10 accounts by ARR in EMEA Q1FY26.",
+    "parts": [
+      {
+        "text": "Give me top 10 accounts by ARR in EMEA Q1FY26.",
+        "extracted": {
+          "raw_query": "Give me top 10 accounts by ARR in EMEA Q1FY26.",
+          "intent": "RANK",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "top",
+          "limit_n": 10,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Which geo had highest ARR growth QoQ in Q1FY26?",
+    "parts": [
+      {
+        "text": "Which geo had highest ARR growth QoQ in Q1FY26?",
+        "extracted": {
+          "raw_query": "Which geo had highest ARR growth QoQ in Q1FY26?",
+          "intent": "DELTA",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "top",
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me ARR trend over last 4 quarters for Private Access.",
+    "parts": [
+      {
+        "text": "Show me ARR trend over last 4 quarters for Private Access.",
+        "extracted": {
+          "raw_query": "Show me ARR trend over last 4 quarters for Private Access.",
+          "intent": "TREND",
+          "account_raw": null,
+          "products_raw": [
+            "Private Access"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "last 4 quarters",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": [
+            "FY 2026 Q2",
+            "FY 2026 Q3",
+            "FY 2026 Q4",
+            "FY 2027 Q1"
+          ]
+        },
+        "where": {
+          "fiscal_quarter__in": [
+            "FY 2026 Q2",
+            "FY 2026 Q3",
+            "FY 2026 Q4",
+            "FY 2027 Q1"
+          ]
+        },
+        "group_by": [
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is Data Security ARR for large enterprise Q1FY26?",
+    "parts": [
+      {
+        "text": "What is Data Security ARR for large enterprise Q1FY26?",
+        "extracted": {
+          "raw_query": "What is Data Security ARR for large enterprise Q1FY26?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Data Security"
+          ],
+          "geo_raw": [],
+          "segment_raw": [
+            "large enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [
+            "Large Enterprise"
+          ],
+          "products": [
+            "Data Security"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "Data Security",
+          "market_segment": "Large Enterprise"
+        },
+        "group_by": [
+          "product_l1",
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is ARR for APAC large enterprise Private Access Q1FY26?",
+    "parts": [
+      {
+        "text": "What is ARR for APAC large enterprise Private Access Q1FY26?",
+        "extracted": {
+          "raw_query": "What is ARR for APAC large enterprise Private Access Q1FY26?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [
+            "Private Access"
+          ],
+          "geo_raw": [
+            "APAC"
+          ],
+          "segment_raw": [
+            "large enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "APJ"
+          ],
+          "segment": [
+            "Large Enterprise"
+          ],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo": "APJ",
+          "market_segment": "Large Enterprise"
+        },
+        "group_by": [
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me bottom 10 accounts by ARR  in AMER Q1FY26.",
+    "parts": [
+      {
+        "text": "Show me bottom 10 accounts by ARR in AMER Q1FY26.",
+        "extracted": {
+          "raw_query": "Show me bottom 10 accounts by ARR in AMER Q1FY26.",
+          "intent": "RANK",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "AMER"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "bottom",
+          "limit_n": 10,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "Americas"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo": "Americas"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Which segment has highest Internet Access ARR in EMEA Q1FY26?",
+    "parts": [
+      {
+        "text": "Which segment has highest Internet Access ARR in EMEA Q1FY26?",
+        "extracted": {
+          "raw_query": "Which segment has highest Internet Access ARR in EMEA Q1FY26?",
+          "intent": "RANK",
+          "account_raw": null,
+          "products_raw": [
+            "Internet Access"
+          ],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "top",
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "ZIA",
+          "end_user_parent_geo": "EMEA"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me QoQ ARR change for Digital Experience in APAC Q1FY26.",
+    "parts": [
+      {
+        "text": "Give me QoQ ARR change for Digital Experience in APAC Q1FY26.",
+        "extracted": {
+          "raw_query": "Give me QoQ ARR change for Digital Experience in APAC Q1FY26.",
+          "intent": "DELTA",
+          "account_raw": "QoQ",
+          "products_raw": [
+            "Digital Experience"
+          ],
+          "geo_raw": [
+            "APAC"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "APJ"
+          ],
+          "segment": [],
+          "products": [
+            "Digital Experience"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "Digital Experience",
+          "end_user_parent_geo": "APJ"
+        },
+        "group_by": [
+          "product_l1",
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is AI Security ARR for enterprise accounts Q1FY26?",
+    "parts": [
+      {
+        "text": "What is AI Security ARR for enterprise accounts Q1FY26?",
+        "extracted": {
+          "raw_query": "What is AI Security ARR for enterprise accounts Q1FY26?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me ARR by product for EMEA large enterprise Q1FY26.",
+    "parts": [
+      {
+        "text": "Show me ARR by product for EMEA large enterprise Q1FY26.",
+        "extracted": {
+          "raw_query": "Show me ARR by product for EMEA large enterprise Q1FY26.",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [
+            "large enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [
+            "Large Enterprise"
+          ],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo": "EMEA",
+          "market_segment": "Large Enterprise"
+        },
+        "group_by": [
+          "market_segment"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Which product had biggest ARR decline QoQ in Q1FY26?",
+    "parts": [
+      {
+        "text": "Which product had biggest ARR decline QoQ in Q1FY26?",
+        "extracted": {
+          "raw_query": "Which product had biggest ARR decline QoQ in Q1FY26?",
+          "intent": "RISK",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "top",
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me top 5 accounts by Private Access ARR in APAC Q1FY26.",
+    "parts": [
+      {
+        "text": "Give me top 5 accounts by Private Access ARR in APAC Q1FY26.",
+        "extracted": {
+          "raw_query": "Give me top 5 accounts by Private Access ARR in APAC Q1FY26.",
+          "intent": "RANK",
+          "account_raw": null,
+          "products_raw": [
+            "Private Access"
+          ],
+          "geo_raw": [
+            "APAC"
+          ],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": "top",
+          "limit_n": 5,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "APJ"
+          ],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "end_user_parent_geo": "APJ"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is total ARR for accounts renewing in Q2FY26?",
+    "parts": [
+      {
+        "text": "What is total ARR for accounts renewing in Q2FY26?",
+        "extracted": {
+          "raw_query": "What is total ARR for accounts renewing in Q2FY26?",
+          "intent": "AGGREGATE",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q2FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q2"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q2"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q2"
+        },
+        "group_by": []
+      }
+    ]
+  },
+  {
+    "question": "Show me ARR trend for EMEA enterprise over last 4 quarters.",
+    "parts": [
+      {
+        "text": "Show me ARR trend for EMEA enterprise over last 4 quarters.",
+        "extracted": {
+          "raw_query": "Show me ARR trend for EMEA enterprise over last 4 quarters.",
+          "intent": "TREND",
+          "account_raw": null,
+          "products_raw": [],
+          "geo_raw": [
+            "EMEA"
+          ],
+          "segment_raw": [
+            "enterprise"
+          ],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "last 4 quarters",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [
+            "EMEA"
+          ],
+          "segment": [
+            "Enterprise"
+          ],
+          "products": [],
+          "fiscal": [
+            "FY 2026 Q2",
+            "FY 2026 Q3",
+            "FY 2026 Q4",
+            "FY 2027 Q1"
+          ]
+        },
+        "where": {
+          "fiscal_quarter__in": [
+            "FY 2026 Q2",
+            "FY 2026 Q3",
+            "FY 2026 Q4",
+            "FY 2027 Q1"
+          ],
+          "end_user_parent_geo": "EMEA",
+          "market_segment": "Enterprise"
+        },
+        "group_by": [
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is Siemens total ARR Q1FY26?",
+    "parts": [
+      {
+        "text": "What is Siemens total ARR Q1FY26?",
+        "extracted": {
+          "raw_query": "What is Siemens total ARR Q1FY26?",
+          "intent": "LOOKUP",
+          "account_raw": "Siemens",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me HSBC ARR by product Q1FY26.",
+    "parts": [
+      {
+        "text": "Show me HSBC ARR by product Q1FY26.",
+        "extracted": {
+          "raw_query": "Show me HSBC ARR by product Q1FY26.",
+          "intent": "LOOKUP",
+          "account_raw": "HSBC",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is JPMorgan Private Access ARR Q1FY26?",
+    "parts": [
+      {
+        "text": "What is JPMorgan Private Access ARR Q1FY26?",
+        "extracted": {
+          "raw_query": "What is JPMorgan Private Access ARR Q1FY26?",
+          "intent": "LOOKUP",
+          "account_raw": "JPMorgan",
+          "products_raw": [
+            "Private Access"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me Toyota ARR trend over last 4 quarters.",
+    "parts": [
+      {
+        "text": "Give me Toyota ARR trend over last 4 quarters.",
+        "extracted": {
+          "raw_query": "Give me Toyota ARR trend over last 4 quarters.",
+          "intent": "TREND",
+          "account_raw": "Toyota",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "last 4 quarters",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": [
+            "FY 2026 Q2",
+            "FY 2026 Q3",
+            "FY 2026 Q4",
+            "FY 2027 Q1"
+          ]
+        },
+        "where": {
+          "fiscal_quarter__in": [
+            "FY 2026 Q2",
+            "FY 2026 Q3",
+            "FY 2026 Q4",
+            "FY 2027 Q1"
+          ]
+        },
+        "group_by": [
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is Deutsche Bank Internet Access ARR Q1FY26?",
+    "parts": [
+      {
+        "text": "What is Deutsche Bank Internet Access ARR Q1FY26?",
+        "extracted": {
+          "raw_query": "What is Deutsche Bank Internet Access ARR Q1FY26?",
+          "intent": "LOOKUP",
+          "account_raw": "Deutsche Bank",
+          "products_raw": [
+            "Internet Access"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": "Deutsche Bank",
+          "geo": [],
+          "segment": [],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "ZIA",
+          "account_id": "0010g00001k9Ig5AAE"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me Infosys ARR breakdown by product Q1FY26.",
+    "parts": [
+      {
+        "text": "Show me Infosys ARR breakdown by product Q1FY26.",
+        "extracted": {
+          "raw_query": "Show me Infosys ARR breakdown by product Q1FY26.",
+          "intent": "LOOKUP",
+          "account_raw": "Infosys",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is Shell total ARR Q1FY26?",
+    "parts": [
+      {
+        "text": "What is Shell total ARR Q1FY26?",
+        "extracted": {
+          "raw_query": "What is Shell total ARR Q1FY26?",
+          "intent": "LOOKUP",
+          "account_raw": "Shell",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me Pfizer ARR Q1FY26.",
+    "parts": [
+      {
+        "text": "Give me Pfizer ARR Q1FY26.",
+        "extracted": {
+          "raw_query": "Give me Pfizer ARR Q1FY26.",
+          "intent": "LOOKUP",
+          "account_raw": "Pfizer",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is Siemens Private Access ARR QoQ change from Q4FY25 to Q1FY26?",
+    "parts": [
+      {
+        "text": "What is Siemens Private Access ARR QoQ change from Q4FY25 to Q1FY26?",
+        "extracted": {
+          "raw_query": "What is Siemens Private Access ARR QoQ change from Q4FY25 to Q1FY26?",
+          "intent": "DELTA",
+          "account_raw": "Siemens",
+          "products_raw": [
+            "Private Access"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q4FY25 to Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2025",
+          "fiscal_quarter": "FY 2025 Q4"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2025 Q4"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2025 Q4"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me HSBC ARR trend for Internet Access over last 4 quarters.",
+    "parts": [
+      {
+        "text": "Show me HSBC ARR trend for Internet Access over last 4 quarters.",
+        "extracted": {
+          "raw_query": "Show me HSBC ARR trend for Internet Access over last 4 quarters.",
+          "intent": "TREND",
+          "account_raw": "HSBC",
+          "products_raw": [
+            "Internet Access"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "last 4 quarters",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": null,
+          "fiscal_quarter": null
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [
+            "ZIA"
+          ],
+          "fiscal": [
+            "FY 2026 Q2",
+            "FY 2026 Q3",
+            "FY 2026 Q4",
+            "FY 2027 Q1"
+          ]
+        },
+        "where": {
+          "fiscal_quarter__in": [
+            "FY 2026 Q2",
+            "FY 2026 Q3",
+            "FY 2026 Q4",
+            "FY 2027 Q1"
+          ],
+          "product_l1": "ZIA"
+        },
+        "group_by": [
+          "product_l1",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Did Toyota ARR grow or decline QoQ in Q1FY26?",
+    "parts": [
+      {
+        "text": "Did Toyota ARR grow or decline QoQ in Q1FY26?",
+        "extracted": {
+          "raw_query": "Did Toyota ARR grow or decline QoQ in Q1FY26?",
+          "intent": "RISK",
+          "account_raw": "Did Toyota",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What products does Deutsche Bank have ARR in for Q1FY26?",
+    "parts": [
+      {
+        "text": "What products does Deutsche Bank have ARR in for Q1FY26?",
+        "extracted": {
+          "raw_query": "What products does Deutsche Bank have ARR in for Q1FY26?",
+          "intent": "LOOKUP",
+          "account_raw": "Deutsche Bank",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": "Deutsche Bank",
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "account_id": "0010g00001k9Ig5AAE"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Show me Siemens ARR breakdown by product and geo Q1FY26.",
+    "parts": [
+      {
+        "text": "Show me Siemens ARR breakdown by product and geo Q1FY26.",
+        "extracted": {
+          "raw_query": "Show me Siemens ARR breakdown by product and geo Q1FY26.",
+          "intent": "LOOKUP",
+          "account_raw": "Siemens",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "What is JPMorgan Data Security ARR QoQ change Q1FY26?",
+    "parts": [
+      {
+        "text": "What is JPMorgan Data Security ARR QoQ change Q1FY26?",
+        "extracted": {
+          "raw_query": "What is JPMorgan Data Security ARR QoQ change Q1FY26?",
+          "intent": "DELTA",
+          "account_raw": "JPMorgan",
+          "products_raw": [
+            "Data Security"
+          ],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [
+            "Data Security"
+          ],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1",
+          "product_l1": "Data Security"
+        },
+        "group_by": [
+          "product_l1",
+          "end_user_name"
+        ]
+      }
+    ]
+  },
+  {
+    "question": "Give me full ARR profile for HSBC in Q1FY26 \u2014 all products, total ARR and QoQ change.",
+    "parts": [
+      {
+        "text": "Give me full ARR profile for HSBC in Q1FY26 \u2014 all products",
+        "extracted": {
+          "raw_query": "Give me full ARR profile for HSBC in Q1FY26 \u2014 all products",
+          "intent": "LOOKUP",
+          "account_raw": "HSBC",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name",
+          "fiscal_year",
+          "fiscal_quarter"
+        ]
+      },
+      {
+        "text": "Total ARR and QoQ change. for HSBC in Q1FY26",
+        "extracted": {
+          "raw_query": "Total ARR and QoQ change. for HSBC in Q1FY26",
+          "intent": "DELTA",
+          "account_raw": "HSBC",
+          "products_raw": [],
+          "geo_raw": [],
+          "segment_raw": [],
+          "order_type_raw": [],
+          "metric_raw": "ARR",
+          "fiscal_raw": "Q1FY26",
+          "operator": null,
+          "limit_n": null,
+          "missing_critical": [],
+          "fiscal_year": "FY 2026",
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "resolved": {
+          "account": null,
+          "geo": [],
+          "segment": [],
+          "products": [],
+          "fiscal": "FY 2026 Q1"
+        },
+        "where": {
+          "fiscal_quarter": "FY 2026 Q1"
+        },
+        "group_by": [
+          "end_user_name"
+        ]
+      }
+    ]
+  }
+]

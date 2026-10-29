@@ -1,0 +1,300 @@
+# pop_db schema — data_arr + dim_account scope
+# Verified against live DB 2026-10-22
+
+tables:
+  data_arr:
+    display_name: "ARR Fact Table"
+    description: "Annual Recurring Revenue by account, product, geo, and time period. ~1.8M rows."
+    metric_col: arr
+    metric_agg: SUM
+    account_name_col: end_user_name          # individual company — use this for account queries
+    account_id_col: account_id
+    parent_name_col: end_user_parent_name    # parent/rollup entity
+    parent_id_col: end_user_parent_id
+    geo_col: end_user_parent_geo             # CORRECT column; values: Americas / APJ / EMEA
+    fy_col: fiscal_year                      # format: 'FY 2026'  (never 'FY26')
+    fq_col: fiscal_quarter                   # format: 'FY 2026 Q1'  (never 'Q1FY26')
+    segment_col: market_segment
+    product_cols:
+      l1: product_l1
+      l2: product_l2
+      l3: product_l3
+    # Columns to expose in the SQLCoder prompt (minimal, no sensitive cols)
+    query_columns:
+      - end_user_name
+      - end_user_parent_name
+      - end_user_parent_id
+      - end_user_parent_geo
+      - fiscal_year
+      - fiscal_quarter
+      - arr
+      - market_segment
+      - mrr_order_type
+      - product_l1
+      - product_l2
+      - product_l3
+      - product_l4
+      - product_l5
+      - account_id
+    join_to_dim:
+      table: dim_account
+      fact_key: account_id
+      dim_key: account_id
+
+  dim_account:
+    display_name: "Account Dimension"
+    description: "Account master with geo, segment, owner, and ARR snapshot. ~188k rows."
+    account_id_col: account_id
+    account_name_col: account_name
+    parent_id_col: end_user_parent_id
+    parent_name_col: end_user_parent_name
+    search_cols: [account_name, end_user_parent_name]  # used for fuzzy company search
+    query_columns:
+      - account_id
+      - account_name
+      - end_user_parent_id
+      - end_user_parent_name
+      - geo                     # geo column in dim (values: Americas / APJ / EMEA)
+      - market_segment
+      - industry
+      - arr
+      - ae
+      - tsm
+      - renewal_date
+      - zs_rank_by_arr
+
+# Metric → primary table mapping
+metric_table_map:
+  ARR: data_arr
+
+# Geo: raw user input → DB canonical value
+geo_aliases:
+  AMER: Americas
+  AMERICAS: Americas
+  AMERICA: Americas
+  US: Americas
+  NA: Americas
+  "NORTH AMERICA": Americas
+  APAC: APJ
+  APJ: APJ
+  APJC: APJ
+  ASIA: APJ
+  PACIFIC: APJ
+  EMEA: EMEA
+  EUROPE: EMEA
+  EUROPEAN: EMEA
+  MENA: EMEA
+  MEA: EMEA
+  "MIDDLE EAST": EMEA
+  AFRICA: EMEA
+  UK: EMEA
+  "UNITED KINGDOM": EMEA
+  GERMANY: EMEA
+  FRANCE: EMEA
+  SPAIN: EMEA
+  ITALY: EMEA
+  NETHERLANDS: EMEA
+  SWEDEN: EMEA
+  SWITZERLAND: EMEA
+  IRELAND: EMEA
+  UAE: EMEA
+  "SAUDI ARABIA": EMEA
+  ISRAEL: EMEA
+  TURKEY: EMEA
+  POLAND: EMEA
+  USA: Americas
+  "UNITED STATES": Americas
+  "LATIN AMERICA": Americas
+  LATAM: Americas
+  CANADA: Americas
+  BRAZIL: Americas
+  MEXICO: Americas
+  ARGENTINA: Americas
+  "ASIA PACIFIC": APJ
+  JAPAN: APJ
+  INDIA: APJ
+  CHINA: APJ
+  SINGAPORE: APJ
+  AUSTRALIA: APJ
+  KOREA: APJ
+  ANZ: APJ
+  "SOUTHEAST ASIA": APJ
+  "NEW ZEALAND": APJ
+  "HONG KONG": APJ
+  TAIWAN: APJ
+  BELGIUM: EMEA
+  BENELUX: EMEA
+  DACH: EMEA
+  NORDIC: EMEA
+  NORDICS: EMEA
+  SCANDINAVIA: EMEA
+  SCANDINAVIAN: EMEA
+  NORWAY: EMEA
+  DENMARK: EMEA
+  FINLAND: EMEA
+  AUSTRIA: EMEA
+  PORTUGAL: EMEA
+  EGYPT: EMEA
+  "SOUTH AFRICA": EMEA
+  NIGERIA: EMEA
+  KENYA: EMEA
+  QATAR: EMEA
+  KUWAIT: EMEA
+  AFRICAN: EMEA
+  "MIDDLE EASTERN": EMEA
+  ISRAELI: EMEA
+  TURKISH: EMEA
+  POLISH: EMEA
+  COLOMBIA: Americas
+  CHILE: Americas
+  COLOMBIAN: Americas
+  ARGENTINE: Americas
+  CHILEAN: Americas
+  ASEAN: APJ
+  INDONESIA: APJ
+  THAILAND: APJ
+  MALAYSIA: APJ
+  VIETNAM: APJ
+  PHILIPPINES: APJ
+  INDONESIAN: APJ
+  THAI: APJ
+  MALAYSIAN: APJ
+  VIETNAMESE: APJ
+  GERMAN: EMEA
+  FRENCH: EMEA
+  BRITISH: EMEA
+  ITALIAN: EMEA
+  SPANISH: EMEA
+  DUTCH: EMEA
+  SWISS: EMEA
+  SWEDISH: EMEA
+  IRISH: EMEA
+  AMERICAN: Americas
+  "NORTH AMERICAN": Americas
+  "LATIN AMERICAN": Americas
+  CANADIAN: Americas
+  BRAZILIAN: Americas
+  MEXICAN: Americas
+  ASIAN: APJ
+  INDIAN: APJ
+  JAPANESE: APJ
+  CHINESE: APJ
+  KOREAN: APJ
+  AUSTRALIAN: APJ
+  SINGAPOREAN: APJ
+
+# Fiscal format (DB canonical)
+fiscal:
+  year_format: "FY YYYY"          # e.g., FY 2026
+  quarter_format: "FY YYYY QN"   # e.g., FY 2026 Q1
+  quarters: [Q1, Q2, Q3, Q4]
+
+# Zscaler product name → product_l1 value in data_arr
+# Keys are upper-cased user aliases; values are exact DB values.
+# If a product maps to product_l2 instead, prefix key with "l2:".
+# Run: SELECT DISTINCT product_l1 FROM data_arr ORDER BY 1; to refresh this list.
+product_aliases:
+  ZIA: ZIA
+  "ZSCALER INTERNET ACCESS": ZIA
+  "INTERNET ACCESS": ZIA
+  ZPA: ZPA
+  "ZSCALER PRIVATE ACCESS": ZPA
+  "PRIVATE ACCESS": ZPA
+  ZDX: ZDX
+  "ZSCALER DIGITAL EXPERIENCE": ZDX
+  "DIGITAL EXPERIENCE": ZDX
+  ZCP: ZCP
+  "ZSCALER CLOUD PROTECTION": ZCP
+  "CLOUD PROTECTION": ZCP
+  ZEC: ZEC
+  ZTNA: ZPA          # ZTNA is the ZPA capability
+  MAPS: MAPS
+  PLATFORM: Platform
+  BUNDLES: Bundles
+  BUNDLE: Bundles
+  "PROFESSIONAL SERVICES": "Professional Services"
+  PS: "Professional Services"
+  ZCC: ZCC
+  ZCON: ZCON
+  ZWS: ZIA           # ZWS is the web security suite, routes to ZIA product line
+  # SWG is a level-2 hierarchy value (ZIA > SWG), not an l1 product: resolved via the DB hierarchy.
+  "SECURE WEB GATEWAY": SWG
+  "WEB GATEWAY": SWG
+  "WEB SECURITY": ZIA
+  DEM: ZDX
+  "DIGITAL EXPERIENCE MONITORING": ZDX
+  "ZERO TRUST NETWORK ACCESS": ZPA
+
+# Market segment raw → DB canonical (market_segment column in data_arr)
+segment_aliases:
+  ENTERPRISE: Enterprise
+  ENT: Enterprise
+  LARGE ENTERPRISE: Large Enterprise
+  LE: Large Enterprise
+  COMMERCIAL: Commercial
+  COMM: Commercial
+  SMB: SMB
+  MID-MARKET: Mid-Market
+  MIDMARKET: Mid-Market
+  MID MARKET: Mid-Market
+  MM: Mid-Market
+  PUBLIC SECTOR: Public Sector
+  PUBSEC: Public Sector
+  FEDERAL: Federal
+  FED: Federal
+  STATE: State & Local
+  SLED: SLED
+  GLOBAL: Global
+  STRATEGIC: Strategic
+
+# Order type raw → data_arr.mrr_order_type value (Renewal / Upsell / New).
+# A bare "new" is NOT an alias: "new ARR" / "new logo" already mean the incremental-ARR metric / DELTA intent.
+order_type_aliases:
+  RENEWAL: Renewal
+  RENEWALS: Renewal
+  RENEW: Renewal
+  RENEWS: Renewal
+  RENEWED: Renewal
+  RENEWING: Renewal
+  UPSELL: Upsell
+  UPSELLS: Upsell
+  UPSELLING: Upsell
+  UPSOLD: Upsell
+  "UP-SELL": Upsell
+  "UP SELL": Upsell
+  "NEW BUSINESS": New
+  "NEW ORDER": New
+  "NEW ORDERS": New
+  "NEW BOOKING": New
+  "NEW BOOKINGS": New
+
+# Metric name → table + column + default variant
+metrics:
+  ARR:
+    table:   data_arr
+    col:     arr
+    variant: snapshot
+  INCR_ARR:
+    table:   data_arr
+    col:     arr
+    variant: delta
+  ACV:
+    table:   data_arr
+    col:     arr
+    variant: snapshot
+  CHURN:
+    table:   data_arr
+    col:     arr
+    variant: downsell
+
+# Product hierarchy — known l2 values per l1 (from data_arr DISTINCT queries)
+# Used by Tool 1 to set deepest_level when user specifies sub-products
+product_hierarchy:
+  ZIA:  { l2_values: [] }
+  ZPA:  { l2_values: [] }
+  ZDX:  { l2_values: [] }
+  ZCP:  { l2_values: [] }
+  ZEC:  { l2_values: [] }
+  MAPS: { l2_values: [] }
+  Platform:  { l2_values: [] }
+  Bundles:   { l2_values: [] }
