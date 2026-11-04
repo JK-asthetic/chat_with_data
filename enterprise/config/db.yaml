@@ -1,0 +1,24 @@
+# ═══════════════════════════════════════════════════════
+# Database Configuration
+# ═══════════════════════════════════════════════════════
+# Set DRY_RUN to true when no database is connected.
+# In dry-run mode the system reads from CSV samples.
+# Override any value with environment variables:
+#   DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
+
+database:
+  host: localhost
+  port: 5432
+  name: pop_db
+  user: pop
+  password: pop_secret        # override: env var DB_PASSWORD
+  pool_min_size: 2
+  pool_max_size: 10
+  statement_timeout_ms: 30000
+  row_cap: 50000
+  connect_timeout_s: 10
+
+dry_run:
+  enabled: true               # SET TO false when DB is connected
+  data_path: "../jatin_chat_with_data/demo3/data"
+

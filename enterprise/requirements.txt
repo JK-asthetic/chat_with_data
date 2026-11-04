@@ -1,0 +1,18 @@
+# Enterprise Chat with Data — Core Dependencies
+pydantic>=2.0
+pyyaml>=6.0
+spacy>=3.7
+rapidfuzz>=3.0
+rich>=13.0
+requests>=2.31
+sqlglot>=23.0
+pandas>=2.0
+numpy>=1.26
+
+# Database
+psycopg2-binary>=2.9
+asyncpg>=0.29
+
+# Testing
+pytest>=7.0
+

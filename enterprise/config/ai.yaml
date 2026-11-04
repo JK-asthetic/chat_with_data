@@ -1,0 +1,36 @@
+# ═══════════════════════════════════════════════════════
+# AI / LLM Configuration
+# ═══════════════════════════════════════════════════════
+# Override any value with environment variables:
+#   ZLLAMA_BASE_URL, ZLLAMA_API_KEY
+
+provider: zllama              # zllama | openai | anthropic
+
+zllama:
+  base_url: https://zllama.corp.zscaler.com   # override: env ZLLAMA_BASE_URL
+  api_key: ""                                  # override: env ZLLAMA_API_KEY
+  timeout_connect_s: 5
+  timeout_read_s: 45
+
+# ── Model assignments — cost-optimised ───────────────
+# Haiku for all "cheap judgment" calls; Sonnet only for SQL (quality matters)
+models:
+  classifier:  claude-haiku-4-5    # intent + metric + ambiguity  (~$0.0001)
+  validator:   claude-haiku-4-5    # entity validation             (~$0.0001)
+  sql:         claude-sonnet-4-5   # SQL generation (1× per metric agent) (~$0.003)
+  insight:     claude-haiku-4-5    # streamed insight              (~$0.0001)
+
+# ── Pipeline tuning ───────────────────────────────────
+pipeline:
+  max_sql_retries: 3
+  sql_max_tokens: 1500
+  default_limit: 10
+  company_score_threshold: 0.75
+  decomposer_max_parts: 4
+
+# ── NL→SQL cache (skip LLM + DB on repeated questions) ─
+cache:
+  enabled: true
+  max_entries: 500
+  ttl_seconds: 3600            # 1 hour
+

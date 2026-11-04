@@ -1,0 +1,390 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Zscaler ARR Analytics — Schema Configuration
+# Table DDL and column definitions live in core/mdl.py (MDL catalog).
+# This file holds routing, aliases, hierarchy, fiscal, and product config only.
+# Verified against live DB — 2026-11-03
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+# ── Metric → primary table mapping ───────────────────────────────────────────
+
+metric_table_map:
+  ARR:       data_arr
+  INCR_ARR:  data_inc_arr
+  ACV:       data_acv
+  NNACV:     data_acv
+  NACV:      data_nacv_target
+  CHURN:     data_inc_arr
+  QTY:       data_quantity
+
+
+# ── Geo aliases — maps user phrase → canonical label used for matching ─────────
+# Values here are matched by the spaCy extractor (single string per alias).
+# Multi-geo expansion (e.g. Americas → AMS ECE + AMS MPH) is in geo_expand below.
+
+geo_aliases:
+  AMERICAS: Americas
+  AMER:     Americas
+  AMERICA:  Americas
+  AMS:      Americas
+  APJ:      APJ
+  APAC:     APJ
+  APJC:     APJ
+  EMEA:     EMEA
+
+
+# ── Geo expansion — canonical label → actual t6_arr_contract geo column values ─
+# geo column is cfy_geo level: AMS ECE, AMS MPH, APJ, EMEA, etc.
+# When a user says "Americas" or "AMS", both AMS ECE and AMS MPH should be queried.
+
+geo_expand:
+  Americas: [AMS ECE, AMS MPH]
+  APJ:      [APJ]
+  EMEA:     [EMEA]
+
+
+# ── CFY sales-territory hierarchy ─────────────────────────────────────────────
+# 3 levels (sub-region intentionally excluded).
+# Values map directly to t6_arr_contract columns:
+#   cfy_geo  → geo column
+#   cfy_area → area column
+#   cfy_region → region column
+
+cfy_hierarchy:
+  cfy_geo:
+    - AMS ECE
+    - AMS MPH
+    - APJ
+    - Business Development
+    - Channel
+    - EMEA
+  cfy_area:
+    - AMS
+    - AMS Canada
+    - AMS Commercial
+    - AMS ENT
+    - AMS LATAM
+    - AMS Majors
+    - ANZ
+    - Business Development
+    - DO_NOT_SELL_AMS_ECE
+    - EMEA Area Catch All
+    - EMEA DACH
+    - EMEA EMG
+    - EMEA North
+    - EMEA South
+    - EMEA UKI
+    - Federal
+    - Global SI
+    - Greater Asia
+    - India
+    - Japan
+    - Managed Regional
+    - Other Regional
+    - US Health
+    - US SLED
+  cfy_region:
+    - Alpine
+    - AMS Central ENT
+    - AMS Central Majors
+    - AMS Comm Central + PE
+    - AMS Comm East
+    - AMS Comm South
+    - AMS Comm West
+    - AMS East ENT
+    - AMS East Majors 1
+    - AMS East Majors 2
+    - AMS ENT Region Catch All
+    - AMS SMB
+    - AMS South ENT
+    - AMS South Majors
+    - AMS West ENT
+    - AMS West Majors
+    - ANZ AU AUSTRALIA GOVT
+    - ANZ AU COMMERCIAL
+    - ANZ AU NORTH
+    - ANZ AU SOUTH
+    - ANZ Catch All Region
+    - ANZ NEW ZEALAND
+    - Benelux
+    - Business Development
+    - Business Development Region
+    - Canada
+    - Catch All Channel AMS
+    - DO_NOT_SELL_AMS_ECE
+    - Eastern Europe
+    - EMEA Comm DACH
+    - EMEA Comm UKI
+    - EMEA EMG
+    - EMEA EMG Africa
+    - EMEA EMG Comm ME
+    - EMEA EMG KSA
+    - EMEA EMG ME
+    - EMEA Region Catch All
+    - France
+    - Germany ENT
+    - Germany Majors & Public
+    - Greater Asia EM Region
+    - Greater Asia GCR Region
+    - Greater Asia MY Region
+    - Greater Asia SG Region
+    - Greater Asia South Korea Region
+    - GSI Coforge
+    - GSI Infosys
+    - GSI KPMG
+    - Iberia
+    - IND ENT
+    - IND Gov
+    - India Commercial
+    - IND MAJ
+    - Italy
+    - JP COM
+    - JP ENT
+    - JP INDUSTRY
+    - JP MAJ & FIN
+    - LATAM
+    - Managed Regional AMS
+    - Nordics
+    - Other Regional AMS
+    - Other Regional APJ
+    - Other Regional EMEA
+    - UKI ENT
+    - UKI Major
+    - UKI Public Sector
+    - US Federal
+    - US Federal CIV/FSI
+    - US Health Comm
+    - US Health East
+    - US Health West
+    - US SLED East
+    - US SLED Higher Ed
+    - US SLED West
+
+
+# ── Fiscal format (DB canonical) ──────────────────────────────────────────────
+
+fiscal:
+  year_format:    "FY YYYY"       # e.g. FY 2026
+  quarter_format: "FY YYYY QN"   # e.g. FY 2026 Q1
+  quarters:       [Q1, Q2, Q3, Q4]
+
+
+# ── Product aliases ────────────────────────────────────────────────────────────
+# Keys are upper-cased user phrases.
+# Values are the canonical product name in t6_arr_contract at the specified level.
+# Format: "CANONICAL_NAME" (level is inferred by the pipeline from the product hierarchy).
+#
+# L1 products (top-level families):
+#   ZIA, ZPA, Digital Experience, Data Security, Security for AI,
+#   Agentic SecOps, ZT Cloud, ZT Branch, ZT Browser, ZT Cell, ZS-FLEX,
+#   Business Continuity, Support, EOL
+#
+# User aliases are mapped to canonical L1 (or deeper) product names.
+
+product_aliases:
+  # ZIA — Zscaler Internet Access (L1)
+  ZIA:                              ZIA
+  "ZSCALER INTERNET ACCESS":        ZIA
+  "INTERNET ACCESS":                ZIA
+  ZWS:                              ZIA      # ZWS = web security suite, routes to ZIA
+  "WEB SECURITY":                   ZIA
+  "SECURE WEB GATEWAY":             SWG      # L2 under ZIA
+  SWG:                              SWG
+  "WEB GATEWAY":                    SWG
+
+  # ZPA — Zscaler Private Access (L1)
+  ZPA:                              ZPA
+  "ZSCALER PRIVATE ACCESS":         ZPA
+  "PRIVATE ACCESS":                 ZPA
+  ZTNA:                             ZPA      # ZTNA is the ZPA capability
+  "ZERO TRUST NETWORK ACCESS":      ZPA
+
+  # Digital Experience (L1) — ZDX is at L3 under this family
+  ZDX:                              ZDX      # L3 under Digital Experience
+  "ZSCALER DIGITAL EXPERIENCE":     "Digital Experience"
+  "DIGITAL EXPERIENCE":             "Digital Experience"
+  DEM:                              ZDX
+  "DIGITAL EXPERIENCE MONITORING":  ZDX
+
+  # Data Security (L1)
+  "DATA SECURITY":                  "Data Security"
+  DLP:                              "Data Security"   # DLP is a key component of Data Security
+  CASB:                             CASB              # L3 under Data Security
+  DSPM:                             DSPM              # L2 under Data Security
+
+  # Security for AI (L1)
+  "SECURITY FOR AI":                "Security for AI"
+  "AI SECURITY":                    "Security for AI"
+  "AI GUARD":                       "AI Guard"
+  "AI GUARD FOR USERS":             "AI Guard for Users"
+
+  # Agentic SecOps (L1)
+  "AGENTIC SECOPS":                 "Agentic SecOps"
+
+  # ZT products (L1)
+  "ZT CLOUD":                       "ZT Cloud"
+  ZCP:                              "ZT Cloud"         # ZCP maps to ZT Cloud family
+  "CLOUD PROTECTION":               "ZT Cloud"
+  "ZSCALER CLOUD PROTECTION":       "ZT Cloud"
+  "ZT BRANCH":                      "ZT Branch"
+  "ZT BROWSER":                     "ZT Browser"
+  "ZT CELL":                        "ZT Cell"
+
+  # ZS-FLEX (L1)
+  "ZS-FLEX":                        "ZS-FLEX"
+  "ZS FLEX":                        "ZS-FLEX"
+  FLEX:                             "ZS-FLEX"
+
+  # Other
+  MAPS:                             MAPS
+  PLATFORM:                         "ZT Cloud"
+  ZCC:                              ZCC
+  ZCON:                             ZCON
+  "PROFESSIONAL SERVICES":          Support
+  PS:                               Support
+  "BUSINESS CONTINUITY":            "Business Continuity"
+
+
+# ── Market segment aliases ─────────────────────────────────────────────────────
+
+segment_aliases:
+  ENTERPRISE:     Enterprise
+  ENT:            Enterprise
+  "LARGE ENTERPRISE": "Large Enterprise"
+  LE:             "Large Enterprise"
+  COMMERCIAL:     Commercial
+  COMM:           Commercial
+  SMB:            SMB
+  "MID-MARKET":   "Mid-Market"
+  MIDMARKET:      "Mid-Market"
+  "MID MARKET":   "Mid-Market"
+  MM:             "Mid-Market"
+  "PUBLIC SECTOR": "Public Sector"
+  PUBSEC:         "Public Sector"
+  FEDERAL:        Federal
+  FED:            Federal
+  STATE:          "State & Local"
+  SLED:           SLED
+  GLOBAL:         Global
+  STRATEGIC:      Strategic
+
+
+# ── Order type aliases ────────────────────────────────────────────────────────
+# Maps raw user phrase → canonical carve_split_type value used in data_acv / mrr_order_type in data_arr.
+# Canonical values for data_acv.carve_split_type:
+#   Renewal, Upsell, Expansion, New, NEW_CUST, NEW_L1_PRODUCT..NEW_L5_PRODUCT
+# Canonical values for data_arr.mrr_order_type: New, Renewal, Upsell
+
+order_type_aliases:
+  # Renewal
+  RENEWAL:              Renewal
+  RENEWALS:             Renewal
+  RENEW:                Renewal
+  RENEWING:             Renewal
+
+  # Upsell / Expansion
+  UPSELL:               Upsell
+  UPSELLS:              Upsell
+  "UP-SELL":            Upsell
+  EXPANSION:            Expansion
+  EXPAND:               Expansion
+  EXPANDING:            Expansion
+
+  # New Logo / New Customer — maps to carve_split_type = 'NEW_CUST'
+  "NEW LOGO":           NEW_CUST
+  "NEW LOGOS":          NEW_CUST
+  "NEW CUSTOMER":       NEW_CUST
+  "NEW CUSTOMERS":      NEW_CUST
+  "NEW BUSINESS":       NEW_CUST
+  "NEW CUST":           NEW_CUST
+  "NEW ACCOUNTS":       NEW_CUST
+  "NEW ACCOUNT":        NEW_CUST
+  "NET NEW CUSTOMER":   NEW_CUST
+  "LAND":               NEW_CUST    # "land and expand" land = new logo
+
+  # New to Product — maps to carve_split_type = 'NEW_L1_PRODUCT'
+  "NEW TO PRODUCT":     NEW_L1_PRODUCT
+  "NEW PRODUCT":        NEW_L1_PRODUCT
+  "NEW TO L1":          NEW_L1_PRODUCT
+  "CROSS SELL":         NEW_L1_PRODUCT
+  "CROSS-SELL":         NEW_L1_PRODUCT
+
+  # Generic "new" — catch-all new business (not renewal)
+  "NEW ARR":            New
+  "NEW DEALS":          New
+
+
+# ── Metric definitions ────────────────────────────────────────────────────────
+
+metrics:
+  ARR:
+    table:   data_arr
+    col:     arr
+    variant: snapshot
+  INCR_ARR:
+    table:   data_inc_arr
+    col:     arr_change
+    variant: delta
+  ACV:
+    table:   data_acv
+    col:     adjusted_acv
+    variant: snapshot
+  NNACV:
+    table:   data_acv
+    col:     adjusted_acv
+    variant: nnacv             # triggers carve_split_type NOT IN ('Renewal') filter
+  NACV:
+    table:   data_nacv_target
+    col:     target
+    variant: snapshot
+  CHURN:
+    table:   data_inc_arr
+    col:     downsell
+    variant: downsell          # SUM(downsell) — always negative, represents ARR lost
+  QTY:
+    table:   data_quantity
+    col:     product_l1_qty
+    variant: snapshot          # always filter fiscal_month_m_of_quarter = 'M3'
+
+
+# ── Product hierarchy ──────────────────────────────────────────────────────────
+# L1 families with known L2 sub-products (from t6_arr_contract DISTINCT queries).
+# Used by the pipeline to resolve product hierarchy depth.
+
+product_hierarchy:
+  ZIA:
+    level: L1
+    l2_values: [SWG, Firewall, CASB, Sandbox, "Endpoint Context"]
+  ZPA:
+    level: L1
+    l2_values: ["Private Access", Segmentation, "Privileged Remote Access", B2B]
+  "Digital Experience":
+    level: L1
+    l2_values: ["Digital Experience", "Digital Experience Standard"]
+  "Data Security":
+    level: L1
+    l2_values: ["Core DLP", DSPM, "SaaS Security", "App Protection", "Data Security Standard"]
+  "Security for AI":
+    level: L1
+    l2_values: ["Protect AI Systems", "Secure AI Interaction", "Discover AI Risk"]
+  "Agentic SecOps":
+    level: L1
+    l2_values: ["Agentic SecOps Core", MDR, "Threat Hunting", Deception]
+  "ZT Cloud":
+    level: L1
+    l2_values: ["ZT Workloads", "ZT Microsegmentation", "ZT Workloads Gateway", "ZT Workloads Standard"]
+  "ZT Branch":
+    level: L1
+    l2_values: ["ZT Branch", "ZT Branch Standard"]
+  "ZT Browser":
+    level: L1
+    l2_values: ["ZT Browser", "ZT Browser Standard"]
+  "ZS-FLEX":
+    level: L1
+    l2_values: ["ZS-FLEX"]
+  "Business Continuity":
+    level: L1
+    l2_values: ["Business Continuity"]
+  Support:
+    level: L1
+    l2_values: [Support]
