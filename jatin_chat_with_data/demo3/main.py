@@ -29,13 +29,9 @@ from dataclasses import dataclass, field
 # ── Stage imports ─────────────────────────────────────────────────────────────
 from core import hierarchy
 import os
-from pipeline import s2_resolve, s3_clarify, s4_context
-# S1 engine: `MAESTRO_S1=spacy python main.py ...` uses the no-training
-# ner_spacy extractor; otherwise fall back to the regex-based S1.
-if os.environ.get("MAESTRO_S1", "").lower() == "spacy":
-    from pipeline import s1_extract_spacy as s1_extract
-else:
-    from pipeline import s1_extract
+from pipeline import s0b_classify, s2_resolve, s2b_validate, s3_clarify, s4_context
+# Always use the spaCy-based extractor (no training required, schema-driven).
+from pipeline import s1_extract_spacy as s1_extract
 from pipeline import s0_decompose, s5_generate, s6_execute, s7_respond
 from pipeline.models import DecompositionPlan, PipelineResponse
 from pipeline.run_log import SessionLogger
@@ -130,27 +126,89 @@ def _entities(resolved) -> dict:
     }
 
 
-def run(query: str, session_company=None, *, insight: bool = True) -> PipelineResponse | None:
+def _is_strategic(query: str) -> bool:
+    """Detect strategy/planning questions that don't need SQL — they need LLM reasoning."""
+    _strategic_kw = (
+        "how should", "how to", "how can", "what strategy", "optimize", "optimise",
+        "best approach", "next quarter", "marketing by", "go to market", "budget timing",
+        "channel mix", "sales strategy", "recommend", "suggestion", "what would you suggest",
+        "how do we", "what should we", "playbook", "improve retention", "reduce churn",
+    )
+    q = query.lower()
+    return any(kw in q for kw in _strategic_kw)
+
+
+def _answer_strategic(query: str) -> None:
+    """Route a strategy/planning question to the insight LLM and print the answer."""
+    _G  = "\033[92m"
+    _C  = "\033[96m"
+    _B  = "\033[1m"
+    _RS = "\033[0m"
+
+    system = """\
+You are a senior Zscaler sales strategy advisor. The user is asking a strategic planning
+or marketing question about Zscaler's ARR business. Answer concisely and practically.
+Focus on: channel mix (direct/partner/channel), customer segment priorities, geo expansion,
+product attach rates, renewal timing, and budget allocation across quarters.
+Use Zscaler-specific context: ZIA, ZPA, ZDX, Digital Experience, Data Security, ZT Cloud.
+Cite the data dimensions available (fiscal quarter, market segment, geo, product family)
+to explain HOW to get the relevant data to inform each recommendation.
+Format as a short bulleted list (4-6 bullets). Be specific, not generic."""
+
+    print(f"\n  {_B}Strategy Question{_RS}  {_C}Routing to strategic advisor…{_RS}")
+    s7_respond._stream(system, f"Question: {query}\n\nAnswer:", "💡 Strategy:", max_tokens=500)
+    print()
+
+
+def run(query: str, session_company=None, *, insight: bool = True,
+        memory: SessionMemory | None = None) -> PipelineResponse | None:
     """
     Run the full pipeline for a single query.
     Returns PipelineResponse, or None if the user cancelled at clarification.
     """
-    total = 7
+    # Strategic questions (marketing, budget, go-to-market) bypass the SQL pipeline.
+    if _is_strategic(query):
+        _answer_strategic(query)
+        return None
+
+    total = 9   # S0B..S1..S2..S2B..S3..S4..S5..S6..S7
+
+    # ── S0B: LLM pre-classifier (metric, intent, follow-up resolution) ───────
+    step = _Step(1, total, "LLM pre-classify   (metric + follow-up)")
+    cls = s0b_classify.classify(query, memory)
+    if cls.is_strategic:
+        step.done("strategic → advisor")
+        _answer_strategic(query)
+        return None
+    resolved_q = cls.resolved_question or query   # full self-contained question for S1
+    step.done(
+        f"metric={cls.metric}  intent={cls.intent}"
+        + (f"  followup→rewrote" if cls.is_followup else "")
+        + (f"  fiscal_hint={cls.fiscal_hint}" if cls.fiscal_hint else "")
+    )
 
     # ── S1: Extract ──────────────────────────────────────────────────────────
-    step = _Step(1, total, "Extracting entities")
+    step = _Step(2, total, "Extracting entities  (spaCy NER)")
     with _quiet():
-        extracted = s1_extract.extract(query)
+        extracted = s1_extract.extract(resolved_q)
+    # S0B takes precedence for metric when it detected a specific metric (non-ARR)
+    # and spaCy fell back to the default ARR. spaCy is good at products/geo/fiscal;
+    # the LLM classifier is better at metric semantics (new logo → ACV, churn → CHURN).
+    if cls.metric != "ARR" and extracted.metric_raw == "ARR":
+        extracted = extracted.model_copy(update={"metric_raw": cls.metric})
     step.done(f"intent={extracted.intent.value}  "
+              f"metric={extracted.metric_raw}  "
               f"products={extracted.products_raw or '—'}  "
               f"geo={extracted.geo_raw or '—'}")
     _vprint("S1 Extracted", {
         "intent":    extracted.intent.value,
         "account":   extracted.account_raw or "—",
+        "accounts":  extracted.accounts_raw or "—",
         "products":  extracted.products_raw or "—",
         "geo":       extracted.geo_raw or "—",
+        "geo_detail":extracted.geo_detail_raw or "—",
+        "sku":       extracted.sku_raw or "—",
         "segment":   extracted.segment_raw or "—",
-        "order_type": extracted.order_type_raw or "—",
         "metric":    extracted.metric_raw,
         "fiscal":    extracted.fiscal_raw or "—",
         "operator":  extracted.operator or "—",
@@ -159,7 +217,7 @@ def run(query: str, session_company=None, *, insight: bool = True) -> PipelineRe
     })
 
     # ── S2: Resolve (6 tools in parallel) ───────────────────────────────────
-    step = _Step(2, total, "Running 6 resolution tools")
+    step = _Step(3, total, "Running 6 resolution tools")
     with _quiet():
         resolved_base = s2_resolve.resolve(extracted)
     note = (f"products={len(resolved_base.product_filter)}  "
@@ -170,20 +228,35 @@ def run(query: str, session_company=None, *, insight: bool = True) -> PipelineRe
     else:
         step.done(note)
     _vprint("S2 Resolved", {
-        "product_filter":  [" › ".join(p.path) for p in resolved_base.product_filter] or "—",
-        "geo_filter":      resolved_base.geo_filter or "—",
-        "segment_filter":  resolved_base.segment_filter or "—",
-        "order_type_filter": resolved_base.order_type_filter or "—",
+        "product_filter":    [" › ".join(p.path) for p in resolved_base.product_filter] or "—",
+        "geo_filter":        resolved_base.geo_filter or "—",
+        "geo_detail_filter": [f"{g.col}={g.value}" for g in resolved_base.geo_detail_filter] or "—",
+        "sku_filter":        resolved_base.sku_filter or "—",
+        "segment_filter":    resolved_base.segment_filter or "—",
         "fiscal":          str(resolved_base.fiscal.fiscal_quarter_label or resolved_base.fiscal.fiscal_year_label
                                or (f"{q[0]} → {q[-1]} ({len(q)} quarters)"
                                    if (q := resolved_base.fiscal.quarter_labels) else "—")),
         "metric":          f"{resolved_base.metric.name} → {resolved_base.metric.table}.{resolved_base.metric.col}",
+        "accounts":        resolved_base.account_filter.multiple or (
+                               [resolved_base.account_filter.account_name] if resolved_base.account_filter.account_name else "—"),
         "company_matches": [f"{m.account_name} ({m.score:.2f})" for m in resolved_base.company_matches],
         "ambiguities":     resolved_base.ambiguities or "none",
     })
 
+    # ── S2B: LLM entity validation ───────────────────────────────────────────
+    step = _Step(4, total, "LLM entity validation")
+    resolved_base, proceed = s2b_validate.validate_and_correct(
+        query, resolved_base,
+        auto_correct=True,
+        interactive=_VERBOSE,
+    )
+    if not proceed:
+        step.fail("User aborted after entity mismatch")
+        return None
+    step.done()
+
     # ── S3: Clarify + one-hop LLM re-run ────────────────────────────────────
-    step = _Step(3, total, "Clarification gate")
+    step = _Step(5, total, "Clarification gate")
     print()
     clarification = s3_clarify.clarify(resolved_base)
 
@@ -209,7 +282,20 @@ def run(query: str, session_company=None, *, insight: bool = True) -> PipelineRe
                 labels.append("product=" + (", ".join(" › ".join(p.path) for p in clarification.pinned_products)
                                             or "none"))
 
-            if clarification.pinned_company:
+            if clarification.pinned_companies and len(clarification.pinned_companies) > 1:
+                # Multi-account confirmed — build a proper multi-account filter
+                pcs = clarification.pinned_companies
+                updates["account_filter"] = AccountFilter(
+                    account_raw  = pcs[0].account_name,
+                    account_id   = pcs[0].account_id,
+                    account_name = pcs[0].account_name,
+                    multiple     = [c.account_name for c in pcs],
+                    account_ids  = [c.account_id   for c in pcs],
+                )
+                updates["company_matches"]   = pcs
+                updates["company_ambiguous"] = False
+                labels.append("companies=" + ", ".join(f"'{c.account_name}'" for c in pcs))
+            elif clarification.pinned_company:
                 pc = clarification.pinned_company
                 updates["account_filter"]    = AccountFilter(
                     account_raw  = pc.account_name,
@@ -264,7 +350,7 @@ def run(query: str, session_company=None, *, insight: bool = True) -> PipelineRe
         step.done("no clarification needed — ANSWERABLE")
 
     # ── S4: Assemble enriched JSON + SQL context ─────────────────────────────
-    step = _Step(4, total, "Assembling enriched context")
+    step = _Step(6, total, "Assembling enriched context")
     import json as _json
     enriched, ctx = s4_context.build_context(resolved)
     step.done(f"table={ctx.primary_table}  "
@@ -281,7 +367,7 @@ def run(query: str, session_company=None, *, insight: bool = True) -> PipelineRe
     })
 
     # ── S5: Generate SQL ─────────────────────────────────────────────────────
-    step = _Step(5, total, f"Generating SQL ({_D}ZLLAMA{_RS})")
+    step = _Step(7, total, f"Generating SQL ({_D}ZLLAMA{_RS})")
     if _VERBOSE:
         gen = s5_generate.generate(ctx)
     else:
@@ -296,7 +382,7 @@ def run(query: str, session_company=None, *, insight: bool = True) -> PipelineRe
         _vprint("S5 Validation Errors", gen.validation_errors)
 
     # ── S6: Execute (with one DB-error retry back through S5) ───────────────
-    step = _Step(6, total, "Executing query")
+    step = _Step(8, total, "Executing query")
     result = s6_execute.execute(gen.sql, limit=ctx.limit)
     if result.db_error and gen.source == "llm":
         step.warn(f"DB error — retrying S5 with error feedback: {result.db_error[:80]}")
@@ -318,7 +404,7 @@ def run(query: str, session_company=None, *, insight: bool = True) -> PipelineRe
             _vprint("S6 First Row Preview", result.rows[0])
 
     # ── S7: Insight + sanity ─────────────────────────────────────────────────
-    step = _Step(7, total, "Generating insight")
+    step = _Step(9, total, "Generating insight")
     warnings = s7_respond.sanity_check(result, ctx)
     insight_text = s7_respond.generate_insight(result, query) if (insight and result.success) else ""
     chart    = s7_respond.auto_chart_type(result, ctx)
@@ -431,7 +517,7 @@ def run_multi(query: str, memory: SessionMemory | None = None, *, show_sql: bool
             print(f"\n  {_D}▶ running {sq.id}: {part.text}{_RS}")
         _VERBOSE = single and display
         try:
-            part.response = run(part.text, insight=single and display)
+            part.response = run(part.text, insight=single and display, memory=memory)
         except EOFError:
             part.error = "needs clarification (no interactive input available)"
         except Exception as e:  # one broken part must not take the others down
@@ -464,7 +550,7 @@ def run_multi(query: str, memory: SessionMemory | None = None, *, show_sql: bool
 _BANNER = f"""
   {_B}╔{'═' * (_W - 2)}╗
   ║{'ARR Analytics  —  pop_db':^{_W - 2}}║
-  ║{'data_arr + dim_account  |  type /help for commands':^{_W - 2}}║
+  ║{'data_arr · data_acv · data_inc_arr  |  type /help for commands':^{_W - 2}}║
   ╚{'═' * (_W - 2)}╝{_RS}
 """
 
@@ -553,8 +639,9 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         query = " ".join(sys.argv[1:])
         print(f"\n  {_B}Query:{_RS} {query}\n")
+        mem = SessionMemory()
         with SessionLogger() as logger:
-            outcome = run_multi(query, SessionMemory(), show_sql=True, show_plan_json=True)
+            outcome = run_multi(query, mem, show_sql=True, show_plan_json=True)
             for part in outcome.parts:
                 if part.response is not None:
                     logger.log(part.response)

@@ -152,7 +152,10 @@ class FuzzyClosedSetMatcher:
             if best_alias is not None and 1 <= best_dist <= 1:
                 return (bank.label, bank.alias_to_canon[best_alias], 0.9)
             return None
-        # Long path — ratio threshold scaled by length
+        # Long path — ratio threshold scaled by length and label
+        # GEO uses a lower cutoff (75) because geo aliases form a small closed set
+        # and typos like "aremicas"→AMERICAS score ~75 with fuzz.ratio.
+        # PRODUCT/SEGMENT stay at 82/85 to avoid false positives on business vocabulary.
         pool = bank.long_aliases if len(cand) >= 5 else bank.long_aliases + bank.short_aliases
         if not pool:
             return None
@@ -160,8 +163,11 @@ class FuzzyClosedSetMatcher:
         if not res:
             return None
         alias, score, _idx = res
-        cutoff = 82 if len(cand) >= 8 else 85
-        if abs(len(alias) - len(cand)) > 2:       # a typo is a couple of characters off, not a longer name
+        if bank.label == "GEO":
+            cutoff = 75
+        else:
+            cutoff = 82 if len(cand) >= 8 else 85
+        if abs(len(alias) - len(cand)) > 3:       # a typo is a few characters off, not a completely different name
             return None
         if score >= cutoff and alias.upper() != cand:
             return (bank.label, bank.alias_to_canon[alias], score / 100.0)

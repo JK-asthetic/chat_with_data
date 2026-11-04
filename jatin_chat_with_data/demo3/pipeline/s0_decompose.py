@@ -23,12 +23,7 @@ import re
 
 from core.config import get_settings
 from core.memory import SessionMemory
-import os
-
-if os.environ.get("MAESTRO_S1", "").lower() == "spacy":   # same switch as main.py
-    from pipeline import s1_extract_spacy as s1_extract
-else:
-    from pipeline import s1_extract
+from pipeline import s1_extract_spacy as s1_extract
 from pipeline.models import DecompositionPlan, SubQuery
 
 # ── Clause boundaries ─────────────────────────────────────────────────────────
@@ -138,10 +133,10 @@ def plan(query: str, memory: SessionMemory | None = None) -> DecompositionPlan:
         return DecompositionPlan(original=query, strategy="followup" if resolved_refs else "passthrough",
                                  sub_queries=[SubQuery(id="q1", text=text)], notes=notes + ([extra] if extra else []))
 
-    try:
-        return _decompose(query, text, notes, resolved_refs) or passthrough()
-    except Exception as e:  # a splitter bug must never block a question: run it unchanged
-        return passthrough(f"splitter error ({e.__class__.__name__}) — ran the question unchanged")
+    # Split disabled: S0 was fragmenting single questions when it misread
+    # trailing tokens ('flag', '%', 'fpr', '2027') as companies. Keep every
+    # query as one part and let S1/S2 handle entity extraction holistically.
+    return passthrough()
 
 
 def _decompose(query: str, text: str, notes: list[str], resolved_refs: bool) -> DecompositionPlan | None:

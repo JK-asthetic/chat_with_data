@@ -39,7 +39,7 @@ class ExtractionResult:
     """Full extractor output. Multi-group when the query is a comparison."""
     query:    str
     intent:   str                                                # RANK|LOOKUP|AGGREGATE|TREND|COMPARE|DELTA|RISK
-    metric:   str                                                # ARR|ACV|CHURN|INCR_ARR
+    metric:   str                                                # ARR|ACV|NNACV|NACV|CHURN|INCR_ARR|QTY
     operator: Optional[str]       = None                         # top|bottom
     limit_n:  Optional[int]       = None                         # explicit N for top/bottom
     groups:   list[EntityGroup]   = field(default_factory=list)

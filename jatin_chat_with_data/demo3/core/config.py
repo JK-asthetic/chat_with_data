@@ -28,7 +28,7 @@ class Settings:
 
     # ── ZLLAMA (Zscaler internal LLM) ────────────────────────────────────────
     ZLLAMA_BASE_URL:         str = os.getenv("ZLLAMA_BASE_URL", "https://zllama.corp.zscaler.com")
-    ZLLAMA_API_KEY:          str = os.getenv("ZLLAMA_API_KEY", "sk-QrAi3Ej9sVjf-PSYb1ruBA")
+    ZLLAMA_API_KEY:          str = os.getenv("ZLLAMA_API_KEY", "sk-niaqj-lRKq--wNtZMNGlog")
     ZLLAMA_SQL_MODEL:        str = os.getenv("ZLLAMA_SQL_MODEL", "claude-sonnet-4-5")  # S5: SQL gen
     ZLLAMA_INSIGHT_MODEL:    str = os.getenv("ZLLAMA_INSIGHT_MODEL",    "claude-haiku-4-5")  # S7: streamed
 

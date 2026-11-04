@@ -32,13 +32,14 @@ _BOX_W = 72
 @dataclass
 class ClarificationResult:
     """What S3 hands back to main.py."""
-    addendum:       str                      = ""    # text appended to original query for LLM re-run
-    pinned_company: Optional[CompanyMatch]   = None  # already resolved — skip Tool 2 in re-run
-    pinned_fiscal:  Optional[Fiscal]         = None  # already resolved — skip S1 fiscal parsing
+    addendum:        str                      = ""    # text appended to original query for LLM re-run
+    pinned_company:  Optional[CompanyMatch]   = None  # single resolved company
+    pinned_companies: list[CompanyMatch]      = field(default_factory=list)  # confirmed multi-account list
+    pinned_fiscal:   Optional[Fiscal]         = None  # already resolved — skip S1 fiscal parsing
     # hierarchy choices; None = not asked, [] = asked and the user chose no product filter
     pinned_products: Optional[list[ProductFilter]] = None
-    cancelled:      bool                     = False
-    answerable:     bool                     = True
+    cancelled:       bool                     = False
+    answerable:      bool                     = True
     not_answerable_reason: str               = ""
 
 
@@ -52,14 +53,21 @@ def _box(lines: list[str]) -> None:
 
 # ── Individual question prompts ───────────────────────────────────────────────
 
-def _ask_company(matches: list[CompanyMatch]) -> Optional[CompanyMatch]:
-    """Return chosen match, or None for 'all / no filter'."""
+_ALL_ACCOUNTS = CompanyMatch(account_id="__all__", account_name="All accounts (no filter)", score=1.0)
+
+
+def _ask_company(matches: list[CompanyMatch]) -> CompanyMatch:
+    """Return chosen match, or _ALL_ACCOUNTS sentinel to proceed without a company filter.
+
+    'None of these' no longer cancels — it continues without a company filter so the
+    query still runs globally rather than being blocked.
+    """
     lines = [f"{_BOLD}Which company did you mean?{_RESET}", ""]
     for i, m in enumerate(matches, 1):
         bar = "●" if m.score >= 0.95 else ("○" if m.score >= 0.75 else "·")
         lines.append(f"  {i}. {bar} {m.account_name:<40} score: {m.score:.2f}")
-    lines.append(f"  {len(matches)+1}. All / no account filter")
-    lines.append(f"  {len(matches)+2}. None of these — cancel query")
+    lines.append(f"  {len(matches)+1}. None of these — search is different company / continue without filter")
+    lines.append(f"  {len(matches)+2}. All accounts (no company filter)")
     lines.append("")
     lines.append(f"  {_DIM}Press Enter for default [{matches[0].account_name}]{_RESET}")
     _box(lines)
@@ -69,16 +77,72 @@ def _ask_company(matches: list[CompanyMatch]) -> Optional[CompanyMatch]:
             return matches[0]
         try:
             idx = int(raw)
-            if idx == len(matches) + 2:
-                return None  # signals: cancel
-            if idx == len(matches) + 1:
-                return CompanyMatch(account_id="__all__",
-                                    account_name="All matching entities", score=1.0)
+            if idx in (len(matches) + 1, len(matches) + 2):
+                # Both "none of these" and "all accounts" → continue without filter
+                print(f"  {_DIM}Continuing without a company filter — querying all accounts.{_RESET}")
+                return _ALL_ACCOUNTS
             if 1 <= idx <= len(matches):
                 return matches[idx - 1]
         except ValueError:
             pass
         print(f"  Enter a number between 1 and {len(matches)+2}.")
+
+
+def _confirm_multi_account(
+    matches: list[CompanyMatch],
+    typed_names: list[str],
+) -> list[CompanyMatch]:
+    """Show each typed name → resolved name pair and let the user confirm, swap, or drop each.
+
+    Returns the confirmed list of CompanyMatch objects to proceed with.
+    """
+    from rapidfuzz import fuzz as _rfuzz
+
+    confirmed: list[CompanyMatch] = []
+    for m in matches:
+        raw = m.matched_raw or m.account_name
+        similarity = _rfuzz.WRatio(raw.lower(), m.account_name.lower()) / 100.0
+        match_flag = "●" if similarity >= 0.90 else ("○" if similarity >= 0.70 else "·")
+
+        lines = [
+            f"{_BOLD}Confirm company match{_RESET}",
+            "",
+            f"  You typed:    {_BOLD}{raw}{_RESET}",
+            f"  We found:     {match_flag} {m.account_name}  (score: {similarity:.2f})",
+            "",
+            f"  1. ✓  Yes — use '{m.account_name}'",
+            f"  2. ✗  No  — skip this company (don't filter by it)",
+            f"  3. ?  Search for a different name",
+            "",
+            f"  {_DIM}Press Enter to accept [{m.account_name}]{_RESET}",
+        ]
+        _box(lines)
+
+        while True:
+            ans = input(f"  {_CYAN}Your choice [1–3]: {_RESET}").strip()
+            if ans in ("", "1"):
+                confirmed.append(m)
+                break
+            elif ans == "2":
+                print(f"  {_DIM}Skipping '{raw}' — not filtering by this company.{_RESET}")
+                break
+            elif ans == "3":
+                search = input(f"  {_CYAN}Enter company name to search: {_RESET}").strip()
+                if search:
+                    from pipeline.s2_resolve import _search_company_trgm, _search_company_ilike, _trgm_available
+                    fn = _search_company_trgm if _trgm_available() else _search_company_ilike
+                    hits = fn(search)[:5]
+                    if hits:
+                        choice = _ask_company(hits)
+                        if choice.account_id != "__all__":
+                            confirmed.append(choice)
+                    else:
+                        print(f"  {_DIM}No matches found for '{search}'.{_RESET}")
+                break
+            else:
+                print("  Enter 1, 2, or 3.")
+
+    return confirmed
 
 
 def _ask_product(raw_name: str, candidates: list[str]) -> Optional[str]:
@@ -476,16 +540,10 @@ def _classify(resolved: ResolvedEntities) -> tuple[bool, str]:
         account_raw = None  # treat as no company filter
 
     if account_raw and not resolved.company_matches:
-        # Only block when the query specifically needs that company.
-        # RANK/TREND/AGGREGATE queries don't need a specific account — the
-        # extracted name was likely a typo'd word ("wha accounts…"), so just
-        # drop the account filter and continue.
-        if ext.intent.value in ("LOOKUP", "RISK") or (ext.intent.value == "COMPARE" and not resolved.product_filter):
-            return False, (
-                f"Company '{account_raw}' not found in the database. "
-                "Check the spelling or try a parent company name."
-            )
-        # else: silently proceed as if no account was specified
+        # Company named in the query but zero DB matches — continue without a company
+        # filter rather than blocking. The user can re-phrase or the query runs globally.
+        # (Previously this blocked LOOKUP/RISK intents — now we always proceed.)
+        pass  # handled in clarify() with a user-visible notice
 
     # Off-topic or non-analytics query
     if "not_arr_query" in ext.missing_critical:
@@ -572,17 +630,43 @@ def clarify(resolved: ResolvedEntities) -> ClarificationResult:
 
     # Q: Company ambiguity ────────────────────────────────────────────────────
     if "company" in resolved.ambiguities and questions_asked < 3:
-        choice = _ask_company(resolved.company_matches)
-        if choice is None:
-            # User said "none of these" → not answerable
-            result.cancelled = True
-            return result
-        if choice.account_id == "__all__":
-            addendum_parts.append("no specific company filter")
+        typed_names = getattr(resolved.extracted, "accounts_raw", None) or (
+            [resolved.extracted.account_raw] if resolved.extracted.account_raw else []
+        )
+        is_multi = len(typed_names) > 1
+
+        if not resolved.company_matches:
+            # No matches at all — notify and continue without a company filter
+            print(f"  {_DIM}Company '{resolved.extracted.account_raw}' not found — "
+                  f"continuing without a company filter.{_RESET}")
+            choice = _ALL_ACCOUNTS
+            if choice.account_id == "__all__":
+                addendum_parts.append("no specific company filter")
+
+        elif is_multi:
+            # Multi-account with low-confidence matches → confirm each one
+            print(f"\n  {_BOLD}┄ Please confirm the companies we matched ┄{_RESET}\n")
+            confirmed = _confirm_multi_account(resolved.company_matches, typed_names)
+            if confirmed:
+                if len(confirmed) == 1:
+                    result.pinned_company = confirmed[0]
+                    addendum_parts.append(f"the company is exactly '{confirmed[0].account_name}'")
+                else:
+                    result.pinned_companies = confirmed   # full list for main.py
+                    result.pinned_company   = confirmed[0]  # primary (for compat)
+                    names_str = " and ".join(f"'{c.account_name}'" for c in confirmed)
+                    addendum_parts.append(f"the companies are exactly {names_str}")
+            else:
+                addendum_parts.append("no specific company filter")
+
         else:
-            # Pin the company — skip Tool 2 re-resolution in the hop
-            result.pinned_company = choice
-            addendum_parts.append(f"the company is exactly '{choice.account_name}'")
+            choice = _ask_company(resolved.company_matches)
+            if choice.account_id == "__all__":
+                addendum_parts.append("no specific company filter")
+            else:
+                result.pinned_company = choice
+                addendum_parts.append(f"the company is exactly '{choice.account_name}'")
+
         questions_asked += 1
 
     # Q: Product ambiguity ────────────────────────────────────────────────────

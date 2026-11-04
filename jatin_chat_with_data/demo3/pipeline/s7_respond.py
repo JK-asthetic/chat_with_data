@@ -72,7 +72,9 @@ def sanity_check(result: QueryResult, ctx: SQLContext) -> list[SanityWarning]:
     if total > 0 and len(values) > 1:
         dominant = max(values) / total
         if dominant > 0.5:
-            top_name = result.rows[values.index(max(values))].get("end_user_name", "One account")
+            top_name = result.rows[values.index(max(values))].get(
+                "account_name", result.rows[values.index(max(values))].get("end_user_name", "One account")
+            )
             warnings.append(SanityWarning(
                 code="S2_OUTLIER",
                 message=f"{top_name} represents {dominant:.0%} of total shown. "
@@ -106,12 +108,16 @@ def sanity_check(result: QueryResult, ctx: SQLContext) -> list[SanityWarning]:
 # ── 8B: LLM insight ──────────────────────────────────────────────────────────
 
 _INSIGHT_SYSTEM = """\
-You are a data analyst writing a 2-3 sentence summary of query results.
-Be factual and grounded — only reference numbers from the rows provided.
-Do not fabricate or estimate. Do not repeat the question verbatim.
-Format numbers as $X.XM or $X.XK for readability.
-Use product names exactly as written in the data or question (ZIA, ZPA, ZDX, ...). Never expand or explain acronyms.
-Dollar amounts in the rows are ALREADY formatted ($94.8K, $2.9M). Copy them exactly; never rescale or convert units.
+You are a data analyst answering a user's question directly from query results.
+
+Rules:
+- If the result is a single value, answer in ONE sentence: state the number and what it represents.
+- If the result is a list/table, write 2-3 sentences: lead with the most notable finding, then context.
+- Be factual — only reference numbers from the rows provided. Never fabricate or estimate.
+- Do not repeat the question verbatim.
+- Dollar amounts in the rows are ALREADY formatted ($94.8K, $2.9M). Copy them exactly; never rescale.
+- Use product names exactly as written (ZIA, ZPA, ZDX, ...). Never expand or explain acronyms.
+- For ranked results, name the top 2-3 entries with their values.
 """
 
 _MERGE_SYSTEM = """\
@@ -234,7 +240,12 @@ def auto_chart_type(
 
 # ── 9: Terminal display ───────────────────────────────────────────────────────
 
-def _fmt_num(val) -> str:
+_ARR_MARKERS = ("arr", "acv", "revenue", "renewal_arr", "q2_2027_renewal_arr")
+_PCT_MARKERS = ("pct", "percent", "rate", "share", "pct_")
+_COUNT_MARKERS = ("count", "qty", "quantity", "num_", "number_")
+
+
+def _fmt_money(val) -> str:
     try:
         f = float(val)
         if f >= 1_000_000:
@@ -246,20 +257,91 @@ def _fmt_num(val) -> str:
         return str(val)
 
 
+def _fmt_pct(val) -> str:
+    try:
+        return f"{float(val):,.1f}%"
+    except (TypeError, ValueError):
+        return str(val)
+
+
+def _fmt_count(val) -> str:
+    try:
+        return f"{int(float(val)):,}"
+    except (TypeError, ValueError):
+        return str(val)
+
+
+def _fmt_num(val) -> str:
+    """Legacy alias used by humanize_rows — always money format."""
+    return _fmt_money(val)
+
+
+def _col_kind(col: str) -> str:
+    """Classify a column name as 'money', 'pct', 'count', or 'plain'."""
+    c = col.lower()
+    if any(m in c for m in _PCT_MARKERS):
+        return "pct"
+    if any(m in c for m in _ARR_MARKERS):
+        return "money"
+    if any(m in c for m in _COUNT_MARKERS):
+        return "count"
+    return "plain"
+
+
+def _display_stat_card(result: QueryResult) -> None:
+    """Single-value result: show as a clean formatted number, not a table row."""
+    if not result.rows:
+        return
+    row = result.rows[0]
+    metric_col = next(
+        (c for c in result.columns if _col_kind(c) in ("money", "count")),
+        None,
+    )
+    label_col = next(
+        (c for c in result.columns if _col_kind(c) == "plain"),
+        None,
+    )
+    if metric_col:
+        val = row.get(metric_col)
+        kind = _col_kind(metric_col)
+        if kind == "money":
+            fmt_val = _fmt_money(val)
+        elif kind == "count":
+            fmt_val = _fmt_count(val)
+        else:
+            fmt_val = str(val)
+        label = str(row.get(label_col, "")) if label_col else ""
+        print(f"\n  {_B}{fmt_val}{_RS}", end="")
+        if label:
+            print(f"  {_D}— {label}{_RS}", end="")
+        print()
+    else:
+        _display_table(result)
+
+
 def _display_table(result: QueryResult) -> None:
     if not result.rows:
         print(f"  {_Y}No rows returned.{_RS}")
         return
 
-    # Auto-format ARR columns
-    arr_cols = {c for c in result.columns
-                if any(m in c.lower() for m in ("arr", "acv", "total"))}
+    kinds = {c: _col_kind(c) for c in result.columns}
+
+    def _fmt(col: str, val) -> str:
+        if val is None or val == "":
+            return "—"
+        k = kinds[col]
+        if k == "money":
+            return _fmt_money(val)
+        if k == "pct":
+            return _fmt_pct(val)
+        if k == "count":
+            return _fmt_count(val)
+        return str(val)
 
     col_widths = {c: max(len(c), 8) for c in result.columns}
     for row in result.rows:
         for c in result.columns:
-            val = _fmt_num(row[c]) if c in arr_cols else str(row.get(c, ""))
-            col_widths[c] = max(col_widths[c], len(val))
+            col_widths[c] = max(col_widths[c], len(_fmt(c, row.get(c, ""))))
 
     # Header
     header = "  " + "  ".join(c.upper().ljust(col_widths[c]) for c in result.columns)
@@ -268,10 +350,7 @@ def _display_table(result: QueryResult) -> None:
 
     # Rows
     for row in result.rows:
-        parts = []
-        for c in result.columns:
-            val = _fmt_num(row[c]) if c in arr_cols else str(row.get(c, "") or "")
-            parts.append(val.ljust(col_widths[c]))
+        parts = [_fmt(c, row.get(c, "")).ljust(col_widths[c]) for c in result.columns]
         print("  " + "  ".join(parts))
 
 
@@ -298,8 +377,10 @@ def display(response: PipelineResponse, show_sql: bool = False, show_header: boo
         if ctx.where_values:
             print(f"  {_D}Filters applied: {ctx.where_values}{_RS}")
     else:
-        _display_table(result)
-        # Insight
+        if response.chart_type == "stat_card":
+            _display_stat_card(result)
+        else:
+            _display_table(result)
         # insight already printed live during streaming — skip re-printing
 
     # Metadata footer

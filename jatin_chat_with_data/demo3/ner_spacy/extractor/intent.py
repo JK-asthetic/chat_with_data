@@ -27,9 +27,13 @@ _CUES = {
 }
 
 _METRIC_CUES = (
-    ("ACV",      re.compile(r"\bacv\b", re.I)),
-    ("INCR_ARR", re.compile(r"incr(?:emental)?[ _]?arr|net[- ]new arr|new arr", re.I)),
-    ("CHURN",    re.compile(r"downsell|\bchurn", re.I)),
+    # NACV before NNACV before ACV — longest match wins
+    ("NACV",     re.compile(r"\bnacv\b(?!\s*excl|\s*net)|nacv[- ]target|new[- ]acv[- ]target|new acv target", re.I)),
+    ("NNACV",    re.compile(r"\bnnacv\b|net[- ]new[- ]acv|new[- ]acv(?!\s*target)|nnacv[- ]target", re.I)),
+    ("ACV",      re.compile(r"\bacv\b|annual contract value|booking value|bookings", re.I)),
+    ("INCR_ARR", re.compile(r"incr(?:emental)?[ _]?arr|net[- ]new arr|new arr|\binc[- ]arr\b", re.I)),
+    ("CHURN",    re.compile(r"downsell|\bchurn\b|churned|contraction|lost arr", re.I)),
+    ("QTY",      re.compile(r"\bqty\b|quantity|seats?\b|licenses?\b|units?\b", re.I)),
 )
 
 

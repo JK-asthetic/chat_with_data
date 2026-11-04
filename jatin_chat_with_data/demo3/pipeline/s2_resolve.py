@@ -17,6 +17,8 @@ from __future__ import annotations
 import asyncio
 import difflib
 import re
+
+from rapidfuzz import fuzz as _rfuzz
 from datetime import date
 from typing import Optional
 
@@ -110,37 +112,75 @@ def _trgm_available() -> bool:
     return _HAS_TRGM
 
 
+def _best_word_ratio(cand: str, name: str) -> float:
+    """Max per-word similarity of cand vs any single word of name.
+
+    Uses rapidfuzz WRatio (handles transpositions, insertions, deletions better than
+    difflib). 'seimnes' vs 'Siemens AG' → max(WRatio('seimnes','siemens')/100, ...) ≈ 0.90.
+    """
+    words = [w for w in name.lower().split() if w]
+    if not words:
+        return 0.0
+    c = cand.lower()
+    return max(_rfuzz.WRatio(c, w) / 100.0 for w in words)
+
+
+def _adjacent_swaps(c: str) -> list[str]:
+    out = [c]
+    for i in range(len(c) - 1):
+        if c[i] != c[i + 1]:
+            out.append(c[:i] + c[i + 1] + c[i] + c[i + 2:])
+    return out
+
+
 def _search_company_trgm(raw: str) -> list[CompanyMatch]:
+    """Shortlist via two cheap index-friendly probes against t6_arr_contract (active customers only).
+
+    Searching t6_arr_contract.account_name restricts matches to companies Zscaler actually
+    transacts with. account_id is available in the same table — no join to dim_account needed.
+    """
+    q = raw.lower()
+    q4 = q[:4]
+    prefix_variants = list({
+        f"{q4[i]}{q4[j]}%"
+        for i in range(len(q4))
+        for j in range(i + 1, len(q4))
+    })
     rows = query_all(
         """
-        SELECT account_id::text, account_name,
-               greatest(
-                 similarity(account_name, %(q)s),
-                 similarity(end_user_parent_name, %(q)s)
-               ) AS score
-        FROM dim_account
-        WHERE account_name %% %(q)s
-           OR end_user_parent_name %% %(q)s
-        ORDER BY score DESC
-        LIMIT 5
+        (
+          SELECT DISTINCT account_id::text AS account_id, account_name
+          FROM t6_arr_contract
+          WHERE is_latest = true
+            AND lower(account_name) %% %(q)s
+          LIMIT 50
+        )
+        UNION
+        (
+          SELECT DISTINCT account_id::text AS account_id, account_name
+          FROM t6_arr_contract
+          WHERE is_latest = true
+            AND lower(account_name) LIKE ANY(%(prefixes)s::text[])
+          LIMIT 200
+        )
         """,
-        {"q": raw},
+        {"q": q, "prefixes": prefix_variants},
     )
-    return [CompanyMatch(account_id=r["account_id"],
-                         account_name=r["account_name"],
-                         score=float(r["score"])) for r in rows]
+    matches: list[CompanyMatch] = []
+    for r in rows:
+        name = r["account_name"]
+        score = 1.0 if q == name.lower() else _best_word_ratio(raw, name)
+        matches.append(CompanyMatch(account_id=r["account_id"],
+                                    account_name=name,
+                                    score=score))
+    matches.sort(key=lambda x: x.score, reverse=True)
+    return matches[:8]
 
 
 def _search_company_ilike(raw: str) -> list[CompanyMatch]:
-    """Fallback when pg_trgm isn't installed.
-
-    Short tokens (≤4 chars) must prefix-match a word in the account name — a
-    plain substring would turn 'wha' into 'Hanwha' at a misleadingly high score.
-    Longer tokens still use SequenceMatcher.
-    """
+    """Fallback when pg_trgm isn't installed. Searches t6_arr_contract accounts only."""
     short = len(raw) <= 4
-    pattern = f"{raw}%" if short else f"%{raw}%"       # prefix for short, substring for long
-    # Subquery so ORDER BY CASE can be computed without appearing in DISTINCT list
+    pattern = f"{raw}%" if short else f"%{raw}%"
     rows = query_all(
         """
         SELECT account_id, account_name FROM (
@@ -150,9 +190,9 @@ def _search_company_ilike(raw: str) -> list[CompanyMatch]:
                 WHEN LOWER(account_name) LIKE LOWER(%(q)s) || ' %%' THEN 1
                 ELSE 2
               END AS sort_key
-            FROM dim_account
-            WHERE account_name ILIKE %(p)s
-               OR end_user_parent_name ILIKE %(p)s
+            FROM t6_arr_contract
+            WHERE is_latest = true
+              AND account_name ILIKE %(p)s
         ) sub
         ORDER BY sort_key, LENGTH(account_name)
         LIMIT 20
@@ -162,11 +202,9 @@ def _search_company_ilike(raw: str) -> list[CompanyMatch]:
     matches = []
     for r in rows:
         name = r["account_name"]
-        # Length-penalised similarity: a 3-char query inside a 20-char name
-        # should NOT look like a strong match. Weight by min(len)/max(len).
         base   = difflib.SequenceMatcher(None, raw.lower(), name.lower()).ratio()
         weight = min(len(raw), len(name)) / max(len(raw), len(name))
-        score  = base * (0.5 + 0.5 * weight)           # short-in-long gets halved toward 0.5
+        score  = base * (0.5 + 0.5 * weight)
         if raw.lower() == name.lower():
             score = 1.0
         matches.append(CompanyMatch(account_id=r["account_id"],
@@ -179,26 +217,74 @@ def _search_company_ilike(raw: str) -> list[CompanyMatch]:
 _COMPANY_SCORE_FLOOR = 0.70   # drop matches below this — "wha", "the", etc. have no real neighbour above this
 
 
-async def _tool_account(raw: Optional[str]) -> tuple[list[CompanyMatch], bool]:
-    """Returns (matches, is_ambiguous).
-
-    A hard score floor of 0.55 drops garbage tokens entirely rather than
-    passing them through as weak matches. Typos ('Siemnes' → 'Siemens AG')
-    score ~0.70+ and survive; random short tokens score <0.4 and are dropped.
-    """
-    if not raw:
-        return [], False
+async def _resolve_one_account(raw: str) -> list[CompanyMatch]:
+    """Resolve a single account name → up to 1 best CompanyMatch (or empty list)."""
     fn = _search_company_trgm if _trgm_available() else _search_company_ilike
     matches = await asyncio.to_thread(fn, raw)
-    # Hard floor — no weak-match leakage
     matches = [m for m in matches if m.score >= _COMPANY_SCORE_FLOOR]
     if not matches:
-        return [], False
+        return []
     cfg = get_settings()
     top = matches[0].score
     multi_high = sum(1 for m in matches if m.score >= 0.75)
-    ambiguous = top < cfg.COMPANY_SCORE_THRESHOLD or multi_high > 1
-    return matches, ambiguous
+    # Ambiguous single-account → return all candidates (caller decides)
+    if top < cfg.COMPANY_SCORE_THRESHOLD or multi_high > 1:
+        return matches  # marked ambiguous by caller
+    return matches[:1]
+
+
+async def _tool_account(
+    raw: Optional[str],
+    all_raws: Optional[list[str]] = None,
+) -> tuple[list[CompanyMatch], bool]:
+    """Returns (matches, is_ambiguous).
+
+    When `all_raws` has more than one entry (multi-account query), resolve each
+    name independently and take the best single match per name — the result is
+    a list of resolved companies with no ambiguity flag (multi-account is valid).
+
+    Single-account path: ambiguous when top score is below threshold or multiple
+    names score ≥ 0.75.
+    """
+    names = all_raws if all_raws else ([raw] if raw else [])
+    if not names:
+        return [], False
+
+    fn = _search_company_trgm if _trgm_available() else _search_company_ilike
+
+    if len(names) == 1:
+        # Original single-account path with ambiguity detection
+        matches = await asyncio.to_thread(fn, names[0])
+        matches = [m for m in matches if m.score >= _COMPANY_SCORE_FLOOR]
+        if not matches:
+            return [], False
+        cfg = get_settings()
+        top = matches[0].score
+        multi_high = sum(1 for m in matches if m.score >= 0.75)
+        ambiguous = top < cfg.COMPANY_SCORE_THRESHOLD or multi_high > 1
+        return matches, ambiguous
+
+    # Multi-account: resolve each in parallel, take best match per name
+    tasks = [_resolve_one_account(n) for n in names]
+    per_name = await asyncio.gather(*tasks)
+    resolved: list[CompanyMatch] = []
+    seen_ids: set[str] = set()
+    needs_confirm = False
+    for raw_name, candidates in zip(names, per_name):
+        if not candidates:
+            continue
+        best = candidates[0]
+        if best.account_id not in seen_ids:
+            # Attach the raw typed name so S3 can show "you typed X → we found Y"
+            best = best.model_copy(update={"matched_raw": raw_name})
+            resolved.append(best)
+            seen_ids.add(best.account_id)
+        # Flag for confirmation if resolved name looks very different from what was typed
+        from rapidfuzz import fuzz as _rfuzz
+        similarity = _rfuzz.WRatio(raw_name.lower(), best.account_name.lower()) / 100.0
+        if similarity < 0.70:
+            needs_confirm = True
+    return resolved, needs_confirm
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -210,16 +296,28 @@ _FY_RE      = re.compile(r"(?:FY\s*|fiscal\s+year\s*)?(\d{2,4})(?:[\s\-\/]?Q([1-
 
 
 def _parse_fiscal_raw(fiscal_raw: Optional[str]) -> Fiscal:
-    """Parse raw fiscal string → Fiscal model (DB labels, no DB validation)."""
+    """Parse raw fiscal string → Fiscal model (DB labels, no DB validation).
+
+    Handles:
+    - Single quarter: 'Q1FY26' → fiscal_quarter_label='FY 2026 Q1'
+    - Multiple quarters: 'Q1FY26 vs Q3FY26' → quarter_labels=['FY 2026 Q1','FY 2026 Q3'], is_range=True
+    - Fiscal year only: 'FY26' → fiscal_year_label='FY 2026'
+    """
     if not fiscal_raw:
         return Fiscal()
 
     def _full(yr: str) -> str:
         return f"20{yr}" if len(yr) == 2 else yr
 
-    m = _Q_FIRST_RE.search(fiscal_raw)
-    if m:
-        q, yr = int(m.group(1)), _full(m.group(2))
+    # Check for multiple named quarters joined by 'vs', 'and', ',', 'to', 'through', etc.
+    all_q = [(int(m.group(1)), _full(m.group(2))) for m in _Q_FIRST_RE.finditer(fiscal_raw)]
+    distinct_q = list(dict.fromkeys(all_q))
+    if len(distinct_q) >= 2:
+        labels = [f"FY {yr} Q{q}" for q, yr in distinct_q]
+        return Fiscal(quarter_labels=labels, is_range=True)
+
+    if len(distinct_q) == 1:
+        q, yr = distinct_q[0]
         fy_label = f"FY {yr}"
         fq_label = f"{fy_label} Q{q}"
         return Fiscal(fy=int(yr), quarter=q, is_range=False,
@@ -348,7 +446,7 @@ async def _tool_metric(metric_raw: str) -> Metric:
             col     = defn["col"],
             variant = defn.get("variant", "snapshot"),
         )
-    # Default: ARR
+    # Default: ARR on data_arr
     return Metric(name="ARR", table="data_arr", col="arr", variant="snapshot")
 
 
@@ -358,33 +456,68 @@ async def _tool_metric(metric_raw: str) -> Metric:
 
 async def _tool_geo(geo_raw: list[str]) -> tuple[list[str], list[str]]:
     """
-    Maps each raw geo string → canonical DB value.
+    Maps each raw geo string → actual t6_arr_contract geo column values (AMS ECE, AMS MPH, APJ, EMEA).
+    "Americas" / "AMS" expands to [AMS ECE, AMS MPH].
     Returns (resolved_list, invalid_list).
     """
-    aliases = get_schema().get("geo_aliases", {})
+    schema   = get_schema()
+    aliases  = schema.get("geo_aliases", {})
+    expand   = schema.get("geo_expand", {})   # canonical label → list[str] of actual geo column values
     resolved: list[str] = []
     invalid:  list[str] = []
+
+    def _add_expanded(canon: str) -> None:
+        for v in expand.get(canon, [canon]):
+            if v not in resolved:
+                resolved.append(v)
 
     for raw in geo_raw:
         key = raw.upper().strip()
         canon = aliases.get(key)
         if canon:
-            if canon not in resolved:
-                resolved.append(canon)
+            _add_expanded(canon)
             continue
-        # Partial match
+        # Partial match against alias keys
         partials = list(dict.fromkeys(
             v for k, v in aliases.items()
             if key in k or k in key
         ))
         if partials:
             for p in partials:
-                if p not in resolved:
-                    resolved.append(p)
+                _add_expanded(p)
         else:
             invalid.append(raw)
 
     return resolved, invalid
+
+
+async def _tool_geo_detail(geo_detail_raw: list[str]) -> "list[GeoFilter]":
+    """
+    Tool 5b — resolves detailed cfy territory phrases to (col, value) pairs.
+    Maps to t6_arr_contract columns: cfy_geo→geo, cfy_area→area, cfy_region→region.
+
+    Simple geo canonicals (Americas/APJ/EMEA) are handled by _tool_geo and skipped here.
+    """
+    from core.geo import search_geo
+    from pipeline.models import GeoFilter
+
+    # These are handled by the simple geo tool (_tool_geo → end_user_parent_geo)
+    _SIMPLE_CANONICALS = {"Americas", "APJ", "EMEA"}
+
+    resolved: list[GeoFilter] = []
+    seen_values: set[str] = set()
+
+    for phrase in geo_detail_raw:
+        node = search_geo(phrase)
+        if not node:
+            continue
+        if node["value"] in _SIMPLE_CANONICALS:
+            continue  # let _tool_geo handle it via end_user_parent_geo
+        if node["value"] not in seen_values:
+            seen_values.add(node["value"])
+            resolved.append(GeoFilter(col=node["col"], value=node["value"]))
+
+    return resolved
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -414,23 +547,95 @@ async def _tool_segment(segment_raw: list[str]) -> tuple[list[str], list[str]]:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# Tool 7 — SKU Resolver
+# ══════════════════════════════════════════════════════════════════════════════
+
+_SKU_SCORE_FLOOR = 0.78   # per-char similarity floor for a fuzzy SKU match
+
+
+def _search_sku_trgm(raw: str) -> list[str]:
+    """Return up to 10 sku values from t6_arr_contract that fuzzy-match raw (pg_trgm probe)."""
+    q = raw.lower()
+    q4 = q[:4]
+    prefix_variants = list({
+        f"{q4[i]}{q4[j]}%"
+        for i in range(len(q4))
+        for j in range(i + 1, len(q4))
+    })
+    rows = query_all(
+        """
+        (
+          SELECT DISTINCT sku FROM t6_arr_contract
+          WHERE is_latest = true AND lower(sku) %% %(q)s
+          LIMIT 30
+        )
+        UNION
+        (
+          SELECT DISTINCT sku FROM t6_arr_contract
+          WHERE is_latest = true AND lower(sku) LIKE ANY(%(prefixes)s::text[])
+          LIMIT 100
+        )
+        """,
+        {"q": q, "prefixes": prefix_variants},
+    )
+    return [r["sku"] for r in rows if r["sku"]]
+
+
+def _search_sku_ilike(raw: str) -> list[str]:
+    """Fallback SKU search without pg_trgm."""
+    short = len(raw) <= 4
+    pattern = f"{raw}%" if short else f"%{raw}%"
+    rows = query_all(
+        "SELECT DISTINCT sku FROM t6_arr_contract WHERE is_latest = true AND sku ILIKE %(p)s LIMIT 100",
+        {"p": pattern},
+    )
+    return [r["sku"] for r in rows if r["sku"]]
+
+
+async def _tool_sku(sku_raw: list[str]) -> list[str]:
+    """Resolve raw SKU tokens → canonical sku values from t6_arr_contract.
+
+    S1 already resolved any typed SKU to the canonical form via a 100% exact
+    match against the fixed t6_arr_contract.sku vocabulary (see core/skus.py).
+    This tool just dedupes + canonicalises in case a caller passes a lower-cased
+    variant directly. No fuzzy / similarity search — SKUs are a fixed list.
+    """
+    if not sku_raw:
+        return []
+    from core import skus as _skus
+    resolved: list[str] = []
+    for raw in sku_raw:
+        if not raw or not raw.strip():
+            continue
+        canon = _skus.canonical(raw) or raw.strip()
+        if canon not in resolved:
+            resolved.append(canon)
+    return resolved
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # Orchestrator — run all 6 tools concurrently
 # ══════════════════════════════════════════════════════════════════════════════
 
 async def _resolve_async(extracted: ExtractedQuery) -> ResolvedEntities:
-    # Run tools concurrently
+    # Run tools concurrently (Tool 7 = SKU, Tool 8 = detailed geo)
+    all_raws = getattr(extracted, "accounts_raw", None) or []
     (
         (company_matches, company_ambiguous),
         (fiscal, fiscal_valid, fiscal_warn),
         metric,
         (geo_resolved, geo_invalid),
         (seg_resolved, seg_invalid),
+        sku_resolved,
+        geo_detail_resolved,
     ) = await asyncio.gather(
-        _tool_account(extracted.account_raw),
+        _tool_account(extracted.account_raw, all_raws if len(all_raws) > 1 else None),
         _tool_fiscal(extracted.fiscal_raw, extracted.fiscal_year, extracted.fiscal_quarter, extracted.raw_query),
         _tool_metric(extracted.metric_raw),
         _tool_geo(extracted.geo_raw),
         _tool_segment(extracted.segment_raw),
+        _tool_sku(extracted.sku_raw),
+        _tool_geo_detail(extracted.geo_detail_raw),
     )
 
     if fiscal_valid and (trend := _trend_window(extracted, fiscal)):
@@ -441,15 +646,26 @@ async def _resolve_async(extracted: ExtractedQuery) -> ResolvedEntities:
         extracted.products_raw
     )
 
-    # Build AccountFilter from best company match
+    # Build AccountFilter from company matches
     account_filter = AccountFilter(account_raw=extracted.account_raw)
+    is_multi = len(getattr(extracted, "accounts_raw", None) or []) > 1
     if company_matches and not company_ambiguous:
-        best = company_matches[0]
-        account_filter = AccountFilter(
-            account_raw  = extracted.account_raw,
-            account_id   = best.account_id,
-            account_name = best.account_name,
-        )
+        if is_multi and len(company_matches) > 1:
+            # Multi-account: store all resolved IDs; primary = first
+            account_filter = AccountFilter(
+                account_raw  = extracted.account_raw,
+                account_id   = company_matches[0].account_id,
+                account_name = company_matches[0].account_name,
+                multiple     = [m.account_name for m in company_matches],
+                account_ids  = [m.account_id for m in company_matches],
+            )
+        else:
+            best = company_matches[0]
+            account_filter = AccountFilter(
+                account_raw  = extracted.account_raw,
+                account_id   = best.account_id,
+                account_name = best.account_name,
+            )
 
     # Collect ambiguities for S3
     ambiguities: list[str] = []
@@ -482,9 +698,11 @@ async def _resolve_async(extracted: ExtractedQuery) -> ResolvedEntities:
         metric             = metric,
         geo_filter         = geo_resolved,
         geo_invalid        = geo_invalid,
+        geo_detail_filter  = geo_detail_resolved,
         segment_filter     = seg_resolved,
         segment_invalid    = seg_invalid,
         order_type_filter  = list(dict.fromkeys(extracted.order_type_raw)),
+        sku_filter         = sku_resolved,
         ambiguities        = ambiguities,
     )
 

@@ -90,20 +90,23 @@ def from_seed() -> ProductCatalog:
 
 
 def from_db() -> Optional[ProductCatalog]:
-    """Live catalog from `data_arr`. None if the DB is unreachable."""
+    """Live catalog from `t6_arr_contract`. None if the DB is unreachable."""
     try:
         from core.db import query_all
     except Exception:
         return None
     try:
         cat = ProductCatalog()
-        for lvl, bucket in ((1, cat.l1), (2, cat.l2), (3, cat.l3)):
-            rows = query_all(
-                f"SELECT DISTINCT product_l{lvl} AS v FROM data_arr "
-                f"WHERE product_l{lvl} IS NOT NULL",
-                {},
-            )
-            bucket.update(r["v"].strip() for r in rows if r.get("v"))
+        level_map = {"L1": cat.l1, "L2": cat.l2, "L3": cat.l3}
+        rows = query_all(
+            "SELECT DISTINCT product AS v, level FROM t6_arr_contract "
+            "WHERE is_latest = true AND product IS NOT NULL AND level IN ('L1','L2','L3')",
+            {},
+        )
+        for r in rows:
+            bucket = level_map.get((r.get("level") or "").upper())
+            if bucket is not None and r.get("v"):
+                bucket.add(r["v"].strip())
         return cat
     except Exception:
         return None

@@ -225,7 +225,9 @@ class AccountFinder:
                 canon = self._known_lower.get(c.text.lower(), c.text)
                 out[c.start] = (canon, "exact", 1.0)
                 continue
-            if self._known:
+            # Don't fuzzy-confirm tokens shorter than 4 chars — too many false positives
+            # (e.g. "rhe" matching "Rheem" when the user meant "the").
+            if self._known and len(c.text) >= 4:
                 best = process.extractOne(c.text, self._known, scorer=fuzz.WRatio)
                 if best and best[1] >= self._fuzzy_threshold:
                     out[c.start] = (best[0], "fuzzy", float(best[1]) / 100.0)

@@ -43,11 +43,14 @@ class ExtractedQuery(BaseModel):
     """S1 output — minimal raw extraction, no enrichment, no schema knowledge."""
     raw_query:        str
     intent:           Intent
-    account_raw:      Optional[str]   = None   # customer company name as typed
+    account_raw:      Optional[str]   = None   # first / primary company name as typed
+    accounts_raw:     list[str]       = Field(default_factory=list)  # all companies (multi-account queries)
     products_raw:     list[str]       = Field(default_factory=list)  # ["ZIA", "ZPA"]
     geo_raw:          list[str]       = Field(default_factory=list)  # ["EMEA", "APAC"]
     segment_raw:      list[str]       = Field(default_factory=list)  # ["Enterprise"]
     order_type_raw:   list[str]       = Field(default_factory=list)  # data_arr.mrr_order_type: ["Renewal"]
+    sku_raw:          list[str]       = Field(default_factory=list)  # item_name / SKU codes as typed
+    geo_detail_raw:   list[str]       = Field(default_factory=list)  # cfy hierarchy phrases as typed
     metric_raw:       str             = "ARR"
     fiscal_raw:       Optional[str]   = None   # raw: "Q1FY26", "FY26", "last quarter"
     operator:         Optional[str]   = None   # top | bottom | all
@@ -126,10 +129,17 @@ class Aggregation(BaseModel):
 
 # ── Company match (Tool 2 intermediate) ──────────────────────────────────────
 
+class GeoFilter(BaseModel):
+    """One resolved cfy geo node (col + canonical value)."""
+    col:   str   # "cfy_geo" | "cfy_area" | "cfy_region"
+    value: str   # canonical DB value, e.g. "Germany ENT"
+
+
 class CompanyMatch(BaseModel):
     account_id:   str
     account_name: str
     score:        float
+    matched_raw:  Optional[str] = None   # the raw typed name that resolved to this match
 
 
 # ── Stage 2 — Resolved Entities (all 6 tool outputs) ─────────────────────────
@@ -158,9 +168,11 @@ class ResolvedEntities(BaseModel):
     # Tool 4 — Metric Resolver
     metric:             Metric                = Field(default_factory=Metric)
 
-    # Tool 5 — Geo Validator
+    # Tool 5 — Geo Validator (simple end_user_parent_geo: Americas/APJ/EMEA)
     geo_filter:         list[str]             = Field(default_factory=list)
     geo_invalid:        list[str]             = Field(default_factory=list)
+    # Tool 5b — Detailed cfy geo hierarchy
+    geo_detail_filter:  list[GeoFilter]       = Field(default_factory=list)
 
     # Tool 6 — Segment Validator
     segment_filter:     list[str]             = Field(default_factory=list)
@@ -168,6 +180,9 @@ class ResolvedEntities(BaseModel):
 
     # Order type (mrr_order_type) — canonical already, passed straight through
     order_type_filter:  list[str]             = Field(default_factory=list)
+
+    # Tool 7 — SKU / item_name resolver
+    sku_filter:         list[str]             = Field(default_factory=list)
 
     # Session
     session_company:    Optional[CompanyMatch] = None
@@ -199,12 +214,14 @@ class ResolvedEntities(BaseModel):
 
 class EnrichedQuery(BaseModel):
     """S4 assembled output — the canonical enriched JSON."""
-    intent:         Intent
-    account_filter: AccountFilter
-    product_filter: list[ProductFilter]
-    geo_filter:     list[str]
-    segment_filter: list[str]
-    order_type_filter: list[str]  = Field(default_factory=list)
+    intent:            Intent
+    account_filter:    AccountFilter
+    product_filter:    list[ProductFilter]
+    geo_filter:        list[str]             # simple end_user_parent_geo values
+    geo_detail_filter: list[GeoFilter]       = Field(default_factory=list)  # cfy hierarchy
+    segment_filter:    list[str]
+    order_type_filter: list[str]             = Field(default_factory=list)
+    sku_filter:        list[str]             = Field(default_factory=list)
     metric:         Metric
     aggregation:    Aggregation
     fiscal:         Fiscal
@@ -217,7 +234,9 @@ class EnrichedQuery(BaseModel):
 class SQLContext(BaseModel):
     normalized_question: str
     intent:              Intent
-    metric:              str       = "arr"
+    metric:              str       = "arr"        # DB column name
+    metric_name:         str       = "ARR"        # logical name: ARR | CHURN | INCR_ARR | ACV
+    metric_variant:      str       = "snapshot"   # snapshot | delta | downsell | new_logo
     metric_agg:          str       = "SUM"
     primary_table:       str       = "data_arr"
     join_clause:         Optional[str] = None
