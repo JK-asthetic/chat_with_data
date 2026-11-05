@@ -109,20 +109,27 @@ async def run_async(
     step("Stage 1 · Extraction", "running spaCy NER + 7 tools in parallel…")
     resolved = await resolve_async(query)
     ext = resolved.extracted
+
     entity_parts = []
-    if resolved.account_filter and resolved.account_filter.account_name:
-        entity_parts.append(f"account={resolved.account_filter.account_name!r}")
-    if resolved.fiscal:
-        entity_parts.append(f"fiscal={resolved.fiscal.fiscal_quarter_label or resolved.fiscal.fiscal_year_label or ''}")
-    if resolved.geo_filter:
-        entity_parts.append(f"geo={resolved.geo_filter.value!r}")
-    if resolved.product_filter:
-        entity_parts.append(f"product={resolved.product_filter.path}")
-    if resolved.segment_filter:
-        entity_parts.append(f"segment={resolved.segment_filter!r}")
-    ok("Extraction done", ", ".join(entity_parts) if entity_parts else "no entities resolved")
+    try:
+        if resolved.account_filter and resolved.account_filter.account_name:
+            entity_parts.append(f"account={resolved.account_filter.account_name}")
+        if resolved.fiscal and (getattr(resolved.fiscal, "fiscal_quarter_label", None) or getattr(resolved.fiscal, "fiscal_year_label", None)):
+            fiscal_label = getattr(resolved.fiscal, "fiscal_quarter_label", None) or getattr(resolved.fiscal, "fiscal_year_label", "")
+            if fiscal_label:
+                entity_parts.append(f"fiscal={fiscal_label}")
+        if resolved.geo_filter and resolved.geo_filter.value:
+            entity_parts.append(f"geo={resolved.geo_filter.value}")
+        if resolved.product_filter and resolved.product_filter.path:
+            entity_parts.append(f"product={resolved.product_filter.path}")
+        if resolved.segment_filter:
+            entity_parts.append(f"segment={resolved.segment_filter}")
+    except Exception as e:
+        logger.debug(f"Error building entity parts: {e}")
+
+    ok("Extraction done", "; ".join(entity_parts) if entity_parts else "no entities resolved")
     if resolved.ambiguities:
-        warn("Ambiguities", ", ".join(resolved.ambiguities))
+        warn("Ambiguities", "; ".join(resolved.ambiguities))
 
     # Stage 2: LLM pre-classify (metric routing + intent + follow-up)
     step("Stage 2 · Classification", f"routing query via LLM ({get_ai().models.classifier})…")
