@@ -67,10 +67,11 @@ def _search_offline(raw: str) -> list[CompanyMatch]:
 def _search_trgm(raw: str) -> list[CompanyMatch]:
     rows = query_all(
         """
-        SELECT DISTINCT account_id::text AS account_id, account_name
+        SELECT account_id::text AS account_id, account_name,
+               similarity(lower(account_name), %(q)s) AS _sim
         FROM dim_account
-        WHERE account_name IS NOT NULL AND lower(account_name) % %(q)s
-        ORDER BY similarity(lower(account_name), %(q)s) DESC
+        WHERE account_name IS NOT NULL AND lower(account_name) %% %(q)s
+        ORDER BY _sim DESC
         LIMIT 8
         """,
         {"q": raw.lower()},

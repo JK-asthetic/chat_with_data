@@ -15,7 +15,6 @@ from typing import Optional
 
 from pipeline.models import Fiscal, Intent
 from core.db import query_one
-from core.settings import get_db
 
 _Q_FIRST_RE = re.compile(r"Q([1-4])\s*(?:FY\s*|fiscal\s*)?(\d{2,4})", re.IGNORECASE)
 _FY_RE = re.compile(r"(?:FY\s*|fiscal\s+year\s*)?(\d{2,4})(?:[\s\-\/]?Q([1-4]))?", re.IGNORECASE)
@@ -132,11 +131,6 @@ async def resolve_fiscal(
         fiscal.fiscal_quarter_label = fq_label
 
     if not fiscal.fiscal_year_label and not fiscal.fiscal_quarter_label and not fiscal.quarter_labels:
-        return fiscal, True, None
-
-    # Validation against DB (skips when in dry_run mode)
-    cfg = get_db()
-    if cfg.dry_run:
         return fiscal, True, None
 
     def _check() -> tuple[bool, Optional[str]]:
