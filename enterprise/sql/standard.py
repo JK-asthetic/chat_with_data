@@ -101,9 +101,8 @@ def churn_swap(plan: Plan) -> str:
     cols = _inc_cols(plan)
     sel, grp = _select_group(cols)
     extra = "is_merger_demerger IS NULL AND end_user_parent_name IS NOT NULL AND downsell < 0" if plan.variant == "top" else ""
-    churn = "ROUND(-SUM(downsell))" if plan.variant == "top" else f"ROUND(-SUM(downsell) FILTER (WHERE {CHURN_COMMENTS}))"
-    swap = "" if plan.variant == "top" else ", ROUND(SUM(swap_positive + swap_negative)) AS swap"
-    return (f"SELECT {sel}{churn} AS churn{swap} FROM data_inc_arr "
+    return (f"SELECT {sel}ROUND(-SUM(downsell) FILTER (WHERE {CHURN_COMMENTS})) AS churn, "
+            f"ROUND(SUM(swap_positive + swap_negative)) AS swap FROM data_inc_arr "
             f"WHERE {W(plan.where['data_inc_arr'], extra)} {grp}{_order_limit('churn', plan, bool(cols))}")
 
 
@@ -156,7 +155,7 @@ def plan_pct(plan: Plan) -> str:
 def pipeline(plan: Plan) -> str:
     variant = plan.variant or "open"
     flt = {"lost": "stage = '7 - Closed Lost'",
-           "open_deals": f"{CLOSED} AND pipeline_acv IS NOT NULL AND account_id IS NOT NULL",
+           "open_deals": f"{CLOSED} AND pipeline_acv IS NOT NULL",
            }.get(variant, f"pipeline_type_group = 'Open Pipeline' AND {CLOSED}")
     metric = "lost_acv" if variant == "lost" else "open_pipeline_acv"
     base = f"WITH b AS (SELECT * FROM data_pippeline_curr WHERE {W(plan.where['data_pippeline_curr'], flt)}) "
@@ -175,11 +174,6 @@ def pipeline(plan: Plan) -> str:
         return (base + f"SELECT b.account_id, d.account_name, ROUND(SUM(b.pipeline_acv)) AS {metric} FROM b "
                 "LEFT JOIN dim_account d ON d.account_id = b.account_id GROUP BY b.account_id, d.account_name "
                 f"ORDER BY {metric} DESC NULLS LAST LIMIT {plan.limit}")
-    if variant in ("lost", "open_deals"):                     # top lists (reference 17/18): parent from dim_account
-        return (base + "SELECT COALESCE(d.end_user_parent_id, b.account_id) AS parent_id, "
-                f"COALESCE(d.end_user_parent_name, d.account_name) AS parent_name, ROUND(SUM(b.pipeline_acv)) AS {metric} FROM b "
-                f"LEFT JOIN dim_account d ON d.account_id = b.account_id WHERE b.pipeline_acv IS NOT NULL AND b.account_id IS NOT NULL "
-                f"GROUP BY 1, 2 ORDER BY {metric} DESC LIMIT {plan.limit}")
     return (base + f"SELECT COALESCE(m.end_user_parent_id, b.account_id) AS parent_id, "
             f"COALESCE(m.end_user_parent_name, MAX(d.account_name)) AS parent_name, ROUND(SUM(b.pipeline_acv)) AS {metric} FROM b "
             f"LEFT JOIN {PARENT_MAP} ON m.account_id = b.account_id LEFT JOIN dim_account d ON d.account_id = b.account_id "
@@ -243,9 +237,7 @@ def attach_rate(plan: Plan) -> str:
 
 def undeployed_arr(plan: Plan) -> str:
     where = dict(plan.where["t3_arr_detail"])
-    # reference 11 reports L3 products; an explicit level ('by L1') or a named product overrides it
-    lvl = plan.level if plan.extra.get("explicit_level") else 3
-    level = None if "__raw_product__" in where else f"level = 'L{min(lvl, 3)}'"
+    level = None if "__raw_product__" in where else f"level = 'L{min(plan.level, 3)}'"
     return ("SELECT product, ROUND(SUM(arr)) AS undeployed_arr FROM t3_arr_detail WHERE "
             + W(where, level or "", "configuration_status IS NOT NULL", "deployed_status IS NOT NULL",
                 "lower(trim(deployed_status)) IN ('undeployed','not deployed','limited entitled')")

@@ -12,7 +12,7 @@ from datetime import date
 from functools import lru_cache
 from typing import Any, Optional
 
-from agents.base_agent import MetricAgent, requested_cut
+from agents.base_agent import MetricAgent
 from core import fiscal_calendar as cal
 from core.db import query_one
 from core.log import warn
@@ -117,11 +117,8 @@ class QuantityAgent(MetricAgent):
         # Default shape: product-wise (like the monthly product view) or company-wise when a company is pinned.
         group_by = ["fiscal_month"]
         product_group = self._multi_product_group(resolved) or ([f"product_l{qty_level}"] if pfilters else [])
-        cut = requested_cut(request.question, intent)
-        if cut in ("account", "parent") and not (af and af.account_id):
+        if intent == Intent.RANK:
             group_by += ["account_id", "account_name"]
-            if cut == "parent":
-                warn("Period / cut", "quantity has no parent column — showing it per account")
         elif af and af.account_id:
             group_by += ["account_id", "account_name"] + product_group
         else:

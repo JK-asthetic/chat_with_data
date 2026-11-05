@@ -50,38 +50,6 @@ def _cache_key(question: str, metric: str) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-# Logic the standard queries cannot express -> the LLM writes the SQL (validated, standard query as reference).
-_NEEDS_LLM = re.compile(
-    r"\b(?:but|without|zero|not|no|never|neither|nor|either|both|except|excluding|exclude\w*|only|"
-    r"more|less|fewer|above|below|over|under|greater|exceed\w*|at\s+least|at\s+most|between|"
-    r"growth|grew|grow\w*|chang\w*|increas\w*|decreas\w*|declin\w*|drop\w*|delta|diff\w*|"
-    r"vs|versus|compar\w*|ratio|percent\w*|share|mix|average|avg|median|mean|"
-    r"positive|negative|gross|separately|count|how\s+many|number\s+of|distinct|"
-    r"first|last\s+\d+|since|ytd|qoq|yoy|cagr|contribut\w*|concentrat\w*|"
-    r"bought|buying|purchas\w*|own\w*|have|has|had|cross[- ]sell|white\s*space|penetrat\w*)\b|[%<>]",
-    re.I,
-)
-
-
-_NAMED_RATIO = re.compile(r"\bplan\s*(?:%|pct|percent\w*|attainment)|\battach(?:ment)?\s+rate\s*%?|\bchurn\s+and\s+swap\b", re.I)
-
-
-def needs_llm(question: str) -> bool:
-    """Metric names that contain trigger words ('plan %', 'attach rate') are not logic."""
-    return bool(_NEEDS_LLM.search(_NAMED_RATIO.sub(" ", question or "")))
-
-
-def _deterministic(ctx: SQLContext) -> Optional[str]:
-    """The standard query (spec metrics) or the deterministic ARR/QTY query, when the question fits it."""
-    if needs_llm(ctx.normalized_question):
-        return None
-    if ctx.fallback_sql:
-        return ctx.fallback_sql.rstrip().rstrip(";")
-    if ctx.metric_name in ("ARR", "QTY") and not ctx.join_clause:
-        return build_skeleton(ctx).rstrip().rstrip(";")
-    return None
-
-
 async def generate(
     ctx: SQLContext,
     metric_def: MetricDefinition,
@@ -101,15 +69,6 @@ async def generate(
             attempts=1,
             validation_errors=[],
         )
-
-    if not db_error_feedback:
-        det = _deterministic(ctx)
-        if det:
-            errs = validate(det, ctx)
-            if not errs:
-                ok("SQL standard query", f"metric={ctx.metric_name}  (reference definition, no LLM)")
-                return GeneratedSQL(sql=det, source="standard", attempts=0, validation_errors=[])
-            warn("Standard query failed validation — using LLM", "  |  ".join(errs[:3]))
 
     step("SQL generation", f"calling {ai.models.sql}  metric={ctx.metric}  intent={ctx.intent}")
 

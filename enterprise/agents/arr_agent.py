@@ -15,13 +15,12 @@ from datetime import date
 from functools import lru_cache
 from typing import Any, Optional
 
-from agents.base_agent import MetricAgent, requested_cut
+from agents.base_agent import MetricAgent
 from core import fiscal_calendar as cal
 from core.db import query_one
 from core.log import warn
 from pipeline.models import Fiscal, Intent, MetricAgentRequest, SQLContext
 
-_GEO_COL = {"geo": "cfy_geo", "area": "cfy_area", "region": "cfy_region"}
 _NAME_EXPR = "(ARRAY_AGG(end_user_name ORDER BY arr DESC))[1] AS account_name"
 
 _RENEW_WORD = re.compile(r"\brenew\w*", re.I)
@@ -197,37 +196,48 @@ class ARRAgent(MetricAgent):
         if order:
             where_values["mrr_order_type"] = order
 
-        # 6. Shape — the cut the question asks for ("by product", "by region", "top accounts", "by parent"),
-        #    else the total (or the pinned company's total)
-        cut = requested_cut(request.question, intent)
-        level = resolved.product_level or max([f.deepest_level for f in (resolved.product_filters or [])], default=1) or 1
-        group_by: list[str] = []
-        select_extra: list[str] = []
-        if cut == "product" or (cut == "total" and self._multi_product_group(resolved)):
-            group_by = [f"product_l{level}"]
-        elif cut in _GEO_COL:
-            group_by = [_GEO_COL[cut]]
-        elif cut == "segment":
-            group_by = ["market_segment"]
-        elif cut == "parent":
-            group_by, select_extra = ["end_user_parent_id"], ["MAX(end_user_parent_name) AS parent_name"]
-        elif cut == "account" or (af and af.multiple):
-            group_by, select_extra = ["account_id"], [_NAME_EXPR]
+        # 6. Default shape (the SQL prompt lets the LLM adapt it to the question)
+        if intent == Intent.TREND:
+            group_by = ["fiscal_quarter"]
+            if af and af.multiple:
+                group_by.append("account_id")
+        elif intent == Intent.COMPARE:
+            if resolved.geo_detail_filter:
+                group_by = [resolved.geo_detail_filter.col]
+            elif resolved.geo_filter:
+                group_by = [resolved.geo_filter.col]
+            else:
+                group_by = ["product_l1"]
         elif "end_user_id" in where_values or "end_user_id__in" in where_values:
-            group_by, select_extra = ["end_user_id"], ["MAX(end_user_name) AS account_name"]
+            group_by = ["end_user_id"]
         elif "end_user_parent_id" in where_values or "end_user_parent_id__in" in where_values:
-            group_by, select_extra = ["end_user_parent_id"], ["MAX(end_user_parent_name) AS parent_name"]
+            group_by = ["end_user_parent_id"]
+        else:
+            group_by = ["account_id"]
 
-        if (multi_quarter or intent == Intent.TREND) and "fiscal_quarter" not in group_by:
+        if intent != Intent.RANK:
+            multi_product = self._multi_product_group(resolved)
+            if multi_product:
+                if intent != Intent.TREND:
+                    group_by = []
+                group_by += multi_product
+        if multi_quarter and "fiscal_quarter" not in group_by:
             group_by = ["fiscal_quarter"] + group_by
-        order_by = "total_arr DESC NULLS LAST"
-        if "fiscal_quarter" in group_by:
-            order_by = "fiscal_quarter ASC" + (", total_arr DESC NULLS LAST" if len(group_by) > 1 else "")
 
-        entity_grouped = bool(select_extra) and cut in ("account", "parent")
+        order_by = "total_arr DESC"
+        if "fiscal_quarter" in group_by:
+            order_by = "fiscal_quarter ASC" if intent == Intent.TREND else "fiscal_quarter ASC, total_arr DESC"
+
+        select_extra: list[str] = []
+        if "account_id" in group_by:
+            select_extra = [_NAME_EXPR]
+        elif "end_user_id" in group_by:
+            select_extra = ["MAX(end_user_name) AS account_name"]
+        elif "end_user_parent_id" in group_by:
+            select_extra = ["MAX(end_user_parent_name) AS parent_name"]
+        entity_grouped = bool(select_extra)
         limit_n = resolved.extracted.limit_n or 10
         limit = limit_n if entity_grouped else max(limit_n, 100)
-        warn("ARR shape", f"cut={cut}  group_by={group_by or ['(total)']}  limit={limit}")
 
         return SQLContext(
             normalized_question=request.question,

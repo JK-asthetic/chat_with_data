@@ -123,9 +123,6 @@ class SpecAgent(MetricAgent):
 
         if cuts == ["product"]:
             return "product", level
-        if self.kind == "pipeline" and (_LOST.search(question) or _OPEN_DEALS.search(question)) \
-                and _WANTS_LIST.search(question) and not _WANTS_PRODUCT.search(question) and not (af and af.account_id):
-            return ("account" if re.search(r"\baccounts?\b", question, re.I) else "parent"), level   # top lists merge per parent
         if resolved.product_level or len(filters) > 1 or _WANTS_PRODUCT.search(question):
             return "product", level
         if af and af.account_id:
@@ -186,7 +183,7 @@ class SpecAgent(MetricAgent):
             limit = max(limit, 100)
         plan = standard.Plan(
             metric=self.metric_name, where=where, cut=cut, by_quarter=period["by_quarter"], limit=limit,
-            level=level, extra={"explicit_level": bool(resolved.product_level)}, variant=period["variant"] or ("new_logos" if self._new_logo_question(question) else
+            level=level, variant=period["variant"] or ("new_logos" if self._new_logo_question(question) else
                                                        "top" if self.metric_name == "CHURN" and cut == "parent" and _WANTS_LIST.search(question) else ""),
         )
         return self._context(request, plan, where, notes)

@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 import logging
-import re
 
 from core.settings import get_ai, get_db
 from core.mdl_registry import get_registry, MetricDefinition
@@ -32,26 +31,6 @@ from core.log import step, ok, warn, sql_block
 from sql.builder import _sql_literal, _where_parts
 
 logger = logging.getLogger(__name__)
-
-_BY = r"\b(?:by|per|each|every|across|for\s+(?:all|each|every)|split\s+by|broken\s+down\s+by|breakdown\s+by|grouped\s+by|wise)\s+(?:the\s+|all\s+|its\s+)?"
-_CUT_PATTERNS = [
-    ("parent",  re.compile(_BY + r"parent|\bparent[- ](?:wise|level|compan)|\btop\s+(?:\d+\s+)?parents?\b", re.I)),
-    ("product", re.compile(_BY + r"(?:products?|product\s+(?:lines?|families?)|l[1-5](?:\s+products?)?|level\s*[1-5])\b|\bproduct[- ]wise\b|\ball\s+(?:l[1-5]\s+)?products\b", re.I)),
-    ("region",  re.compile(_BY + r"regions?\b|\bregion[- ]wise\b", re.I)),
-    ("area",    re.compile(_BY + r"(?:areas?|sub[- ]?geos?)\b|\barea[- ]wise\b", re.I)),
-    ("geo",     re.compile(_BY + r"(?:geos?|geograph\w*|theat(?:er|re)s?)\b|\bgeo[- ]wise\b", re.I)),
-    ("segment", re.compile(_BY + r"(?:segments?|market\s+segments?)\b|\bsegment[- ]wise\b", re.I)),
-    ("account", re.compile(_BY + r"(?:accounts?|customers?|companies|logos?|end[- ]users?)\b"
-                           r"|\b(?:top|bottom|largest|biggest|highest|lowest|which)\s+(?:\d+\s+)?(?:accounts?|customers?|companies|logos?)\b", re.I)),
-]
-
-
-def requested_cut(question: str, intent: Intent | None = None) -> str:
-    """The breakdown the question asks for: product | geo | area | region | segment | parent | account | total."""
-    for name, pat in _CUT_PATTERNS:
-        if pat.search(question or ""):
-            return name
-    return "account" if intent == Intent.RANK else "total"
 
 
 class MetricAgent(ABC):
