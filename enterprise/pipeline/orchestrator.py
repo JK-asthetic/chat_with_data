@@ -29,6 +29,7 @@ from pipeline.clarifier import clarify
 from extraction.orchestrator import resolve, resolve_async
 from core.mdl_registry import get_registry
 from core.settings import get_ai
+from core.log import step, ok, warn
 from response.insight import _stream
 
 logger = logging.getLogger(__name__)
@@ -105,10 +106,30 @@ async def run_async(
     mem = memory if memory is not None else SessionMemory()
 
     # Stage 1: Deterministic extraction
+    step("Stage 1 · Extraction", "running spaCy NER + 7 tools in parallel…")
     resolved = await resolve_async(query)
+    ext = resolved.extracted
+    entity_parts = []
+    if resolved.account_filter and resolved.account_filter.account_name:
+        entity_parts.append(f"account={resolved.account_filter.account_name!r}")
+    if resolved.fiscal:
+        entity_parts.append(f"fiscal={resolved.fiscal.fiscal_quarter_label or resolved.fiscal.fiscal_year_label or ''}")
+    if resolved.geo_filter:
+        entity_parts.append(f"geo={resolved.geo_filter.value!r}")
+    if resolved.product_filter:
+        entity_parts.append(f"product={resolved.product_filter.path}")
+    if resolved.segment_filter:
+        entity_parts.append(f"segment={resolved.segment_filter!r}")
+    ok("Extraction done", ", ".join(entity_parts) if entity_parts else "no entities resolved")
+    if resolved.ambiguities:
+        warn("Ambiguities", ", ".join(resolved.ambiguities))
 
     # Stage 2: LLM pre-classify (metric routing + intent + follow-up)
+    step("Stage 2 · Classification", f"routing query via LLM ({get_ai().models.classifier})…")
     classified: ClassifiedQuery = classify(query, resolved, mem)
+    ok("Classification done",
+       f"metrics={classified.metrics_needed}  intent={classified.intent}  "
+       f"followup={classified.is_followup}  strategic={classified.is_strategic}")
 
     # Strategic question bypass
     if classified.is_strategic:
@@ -127,6 +148,7 @@ async def run_async(
 
     # Stage 3: Clarification check if ambiguities exist
     if (resolved.ambiguities or classified.ambiguities) and interactive:
+        step("Stage 3 · Clarification", f"ambiguities: {resolved.ambiguities or classified.ambiguities}")
         clarification_res = clarify(resolved, classified)
         if not clarification_res.answerable or clarification_res.cancelled:
             return PipelineResponse(
@@ -140,6 +162,7 @@ async def run_async(
             resolved.account_filter.account_id = clarification_res.pinned_company.account_id
 
     # Stage 4: Parallel agent execution
+    step("Stage 4 · Agent execution", f"launching {len(classified.sub_queries or classified.metrics_needed)} agent(s) in parallel…")
     sub_queries = classified.sub_queries
     if not sub_queries:
         sub_queries = [
@@ -151,6 +174,7 @@ async def run_async(
 
     # Stage 5: Response assembly & memory update
     elapsed = round((time.perf_counter() - t0) * 1000.0, 2)
+    ok("Stage 5 · Done", f"total={elapsed}ms  agents_ok={len(agent_responses)}")
     response = PipelineResponse(
         question=query,
         agent_responses=agent_responses,

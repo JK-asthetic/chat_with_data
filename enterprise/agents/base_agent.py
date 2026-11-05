@@ -27,6 +27,7 @@ from sql.generator import generate as generate_sql
 from sql.executor import execute as execute_sql
 from response.sanity import sanity_check
 from response.insight import generate_insight
+from core.log import step, ok, warn, sql_block
 
 logger = logging.getLogger(__name__)
 
@@ -69,22 +70,39 @@ class MetricAgent(ABC):
 
     async def run(self, request: MetricAgentRequest) -> MetricAgentResponse:
         """Orchestrates end-to-end execution for this metric."""
+        step(f"Agent [{self.metric_name}]", "building SQL context…")
         ctx = self.build_context(request)
+
+        step(f"Agent [{self.metric_name}]", "generating SQL…")
         gen = await generate_sql(ctx, self.metric_def)
+        ok(f"Agent [{self.metric_name}] SQL ({gen.source})", f"attempt={gen.attempts}")
+        sql_block(gen.sql)
+
+        step(f"Agent [{self.metric_name}]", "executing query…")
         result = await execute_sql(gen.sql, ctx)
 
         # One retry if DB reports execution error
         if result.db_error and gen.source == "llm":
-            logger.info(f"DB execution error on attempt 1. Retrying S5 with error feedback: {result.db_error[:100]}")
+            warn(f"Agent [{self.metric_name}] DB error — retrying", result.db_error[:120])
             gen = await generate_sql(
                 ctx,
                 self.metric_def,
                 db_error_feedback=result.db_error,
                 db_failed_sql=gen.sql,
             )
+            sql_block(gen.sql)
             result = await execute_sql(gen.sql, ctx)
 
+        if result.success:
+            ok(f"Agent [{self.metric_name}] query done", f"rows={result.row_count}  elapsed={result.elapsed_ms}ms")
+        else:
+            warn(f"Agent [{self.metric_name}] query failed", result.db_error or "unknown error")
+
         warnings = sanity_check(result, ctx)
+        if warnings:
+            warn(f"Agent [{self.metric_name}] sanity", "  ".join(warnings))
+
+        step(f"Agent [{self.metric_name}]", "generating insight…")
         insight_text = await generate_insight(result, request.question) if result.success else ""
 
         return MetricAgentResponse(

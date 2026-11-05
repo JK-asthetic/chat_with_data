@@ -11,7 +11,7 @@ from typing import Optional
 from rapidfuzz import fuzz as _rfuzz
 
 from pipeline.models import AccountFilter, CompanyMatch
-from core.settings import get_db, get_ai
+from core.settings import get_ai
 from core.db import check_pg_trgm, query_all
 
 _COMPANY_SCORE_FLOOR = 0.70
@@ -90,8 +90,7 @@ def _search_trgm(raw: str) -> list[CompanyMatch]:
 
 
 async def _resolve_one_account(raw: str) -> list[CompanyMatch]:
-    cfg = get_db()
-    use_trgm = not cfg.dry_run and check_pg_trgm()
+    use_trgm = check_pg_trgm()
     search_fn = _search_trgm if use_trgm else _search_offline
     matches = await asyncio.to_thread(search_fn, raw)
     return [m for m in matches if m.score >= _COMPANY_SCORE_FLOOR]

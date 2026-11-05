@@ -31,6 +31,7 @@ import requests
 
 from core.mdl_registry import get_registry
 from core.settings import get_ai
+from core.log import step, ok, warn
 from pipeline.memory import SessionMemory
 from pipeline.models import ClassifiedQuery, Intent, ResolvedEntities, SubQuery
 
@@ -343,6 +344,7 @@ def classify(
     """
     # -- Fast strategic shortcut -------------------------------------------
     if _is_strategic_by_keyword(query):
+        ok("Classifier shortcut", "strategic keyword match, no LLM call needed")
         logger.debug("Classifier: strategic keyword match, bypassing LLM.")
         metric = resolved.metric.name if resolved.metric else "ARR"
         return ClassifiedQuery(
@@ -358,15 +360,18 @@ def classify(
 
     # -- Build prompt -------------------------------------------------------
     try:
+        step("Classifier", "building prompt…")
         prompt = build_classifier_prompt(query, resolved, memory)
     except Exception as exc:  # pragma: no cover
         return _build_fallback(query, resolved, f"prompt build error: {exc}")
 
     # -- LLM call -----------------------------------------------------------
     try:
+        step("Classifier LLM", f"calling {get_ai().models.classifier}…")
         raw_response = _call_llm(prompt)
         logger.debug("Classifier LLM raw: %s", raw_response[:300])
     except Exception as exc:
+        warn("Classifier LLM failed", str(exc)[:150])
         return _build_fallback(query, resolved, f"LLM call error: {exc}")
 
     # -- Parse response -----------------------------------------------------
@@ -416,6 +421,9 @@ def classify(
     except Exception as exc:
         return _build_fallback(query, resolved, f"model validation error: {exc}")
 
+    ok("Classifier done",
+       f"metrics={classified.metrics_needed}  intent={classified.intent}  "
+       f"followup={classified.is_followup}  strategic={classified.is_strategic}")
     logger.info(
         "Classifier: metrics=%s intent=%s followup=%s strategic=%s",
         classified.metrics_needed,

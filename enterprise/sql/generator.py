@@ -15,6 +15,7 @@ import requests
 
 from core.settings import get_ai
 from core.mdl_registry import MetricDefinition
+from core.log import step, ok, warn
 from pipeline.models import GeneratedSQL, SQLContext
 from sql.builder import build_prompt, build_skeleton
 from sql.validator import qualify_join_columns, pin_group_by_aliases, validate
@@ -60,6 +61,7 @@ async def generate(
 
     # Check cache if no DB error is being retried
     if ai.cache.enabled and not db_error_feedback and key in _SQL_CACHE:
+        ok("SQL cache hit", f"metric={ctx.metric}")
         cached = _SQL_CACHE[key]
         return GeneratedSQL(
             sql=cached.sql,
@@ -67,6 +69,8 @@ async def generate(
             attempts=1,
             validation_errors=[],
         )
+
+    step("SQL generation", f"calling {ai.models.sql}  metric={ctx.metric}  intent={ctx.intent}")
 
     errors: list[str] = [f"DB execution error: {db_error_feedback}"] if db_error_feedback else []
     failed_sql: Optional[str] = db_failed_sql
@@ -107,6 +111,7 @@ async def generate(
             raw_sql = choice["message"]["content"]
             sql = _clean_sql(raw_sql)
         except Exception as e:
+            warn(f"SQL gen attempt {attempt} failed", str(e)[:150])
             logger.warning(f"ZLLAMA SQL generation attempt {attempt} failed: {e}")
             errors = [f"LLM communication error: {str(e)[:150]}"]
             failed_sql = None
@@ -117,15 +122,18 @@ async def generate(
         val_errors = validate(sql, ctx)
 
         if not val_errors:
+            ok(f"SQL gen attempt {attempt} valid", f"metric={ctx.metric}")
             gen_res = GeneratedSQL(sql=sql, source="llm", attempts=attempt, validation_errors=[])
             if ai.cache.enabled:
                 _SQL_CACHE[key] = gen_res
             return gen_res
 
+        warn(f"SQL validation errors (attempt {attempt})", "  |  ".join(val_errors[:3]))
         errors = val_errors
         failed_sql = sql
 
     # If all retries fail, use deterministic fallback
+    warn("SQL generation exhausted retries", "falling back to skeleton SQL")
     skeleton = build_skeleton(ctx)
     return GeneratedSQL(
         sql=skeleton,

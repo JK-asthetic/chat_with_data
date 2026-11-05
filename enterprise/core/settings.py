@@ -39,22 +39,10 @@ class DBSettings(BaseModel):
     statement_timeout_ms: int = 30000
     row_cap: int = 50000
     connect_timeout_s: int = 10
-    dry_run: bool = True
-    dry_run_data_path: str = "../jatin_chat_with_data/demo3/data"
 
     @property
     def url(self) -> str:
         return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.name}"
-
-    @property
-    def data_dir(self) -> Path:
-        resolved = (_ROOT / self.dry_run_data_path).resolve()
-        if not resolved.exists():
-            # Alternative fallback path if running from different cwd
-            alt = Path("c:/Users/jatin/Documents/chat_with_data/jatin_chat_with_data/demo3/data").resolve()
-            if alt.exists():
-                return alt
-        return resolved
 
 
 class ModelConfig(BaseModel):
@@ -81,7 +69,7 @@ class PipelineConfig(BaseModel):
 class AISettings(BaseModel):
     provider: str = "zllama"
     base_url: str = "https://zllama.corp.zscaler.com"
-    api_key: str = ""
+    api_key: str = "sk-niaqj-lRKq--wNtZMNGlog"
     timeout_connect_s: int = 5
     timeout_read_s: int = 45
     models: ModelConfig = Field(default_factory=ModelConfig)
@@ -93,9 +81,8 @@ class AISettings(BaseModel):
 def get_db() -> DBSettings:
     raw = _load_yaml(_DB_CONFIG)
     db_raw = raw.get("database", {})
-    dry_raw = raw.get("dry_run", {})
 
-    settings = DBSettings(
+    return DBSettings(
         host=os.getenv("DB_HOST", db_raw.get("host", "localhost")),
         port=int(os.getenv("DB_PORT", db_raw.get("port", 5432))),
         name=os.getenv("DB_NAME", db_raw.get("name", "pop_db")),
@@ -106,10 +93,7 @@ def get_db() -> DBSettings:
         statement_timeout_ms=int(db_raw.get("statement_timeout_ms", 30000)),
         row_cap=int(db_raw.get("row_cap", 50000)),
         connect_timeout_s=int(db_raw.get("connect_timeout_s", 10)),
-        dry_run=os.getenv("DRY_RUN", str(dry_raw.get("enabled", True))).lower() == "true",
-        dry_run_data_path=dry_raw.get("data_path", "../jatin_chat_with_data/demo3/data"),
     )
-    return settings
 
 
 @lru_cache(maxsize=1)
