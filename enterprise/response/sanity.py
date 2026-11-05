@@ -34,8 +34,9 @@ def sanity_check(result: QueryResult, ctx: SQLContext) -> list[SanityWarning]:
         return warnings
 
     total = sum(values)
-    # S2 Outlier: Single row dominates > 50%
-    if total > 0 and len(values) > 1:
+    entity_rows = any(c.lower() in ("account_id", "account_name", "end_user_name") for c in result.columns)
+    # S2 Outlier: Single account dominates > 50%
+    if entity_rows and total > 0 and len(values) > 1:
         dominant = max(values) / total
         if dominant > 0.5:
             top_name = result.rows[values.index(max(values))].get("account_name",

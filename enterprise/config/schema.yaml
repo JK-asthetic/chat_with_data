@@ -267,6 +267,9 @@ segment_aliases:
   SLED:           SLED
   GLOBAL:         Global
   STRATEGIC:      Strategic
+  MAJOR:          Major
+  MAJORS:         Major
+  "SMB DIGITAL":  "SMB Digital"
 
 
 # ── Order type aliases ────────────────────────────────────────────────────────

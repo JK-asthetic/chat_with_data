@@ -8,7 +8,7 @@ provider: zllama              # zllama | openai | anthropic
 
 zllama:
   base_url: https://zllama.corp.zscaler.com   # override: env ZLLAMA_BASE_URL
-  api_key: ""                                  # override: env ZLLAMA_API_KEY
+  api_key: "sk-niaqj-lRKq--wNtZMNGlog"                                  # override: env ZLLAMA_API_KEY
   timeout_connect_s: 5
   timeout_read_s: 45
 

@@ -1,6 +1,7 @@
 """Database access layer — asyncpg pool (async) and psycopg2 (sync read-only)."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import contextmanager
 from typing import Any, Generator
@@ -10,6 +11,7 @@ from core.settings import get_db
 logger = logging.getLogger(__name__)
 
 _pool: Any = None
+_pool_loop: Any = None
 
 
 @contextmanager
@@ -37,7 +39,7 @@ def query_one(sql: str, params: dict[str, Any] | None = None) -> dict[str, Any] 
 
     with get_readonly_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(sql, params or {})
+            cur.execute(sql, params or None)
             row = cur.fetchone()
             return dict(row) if row else None
 
@@ -48,13 +50,16 @@ def query_all(sql: str, params: dict[str, Any] | None = None) -> list[dict[str, 
 
     with get_readonly_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(sql, params or {})
+            cur.execute(sql, params or None)
             return [dict(r) for r in cur.fetchall()]
 
 
 async def async_query(sql: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """Async query executor — uses asyncpg connection pool."""
-    global _pool
+    global _pool, _pool_loop
+    loop = asyncio.get_running_loop()
+    if _pool is not None and _pool_loop is not loop:
+        _pool = None  # created on another (finished) event loop — unusable here
     if _pool is None:
         import asyncpg
 
@@ -65,6 +70,7 @@ async def async_query(sql: str, params: dict[str, Any] | None = None) -> list[di
             max_size=cfg.pool_max_size,
             command_timeout=cfg.statement_timeout_ms / 1000.0,
         )
+        _pool_loop = loop
 
     async with _pool.acquire() as conn:
         records = await conn.fetch(sql, *(params.values() if params else ()))
@@ -72,10 +78,11 @@ async def async_query(sql: str, params: dict[str, Any] | None = None) -> list[di
 
 
 async def close_pool() -> None:
-    global _pool
-    if _pool is not None:
+    global _pool, _pool_loop
+    if _pool is not None and _pool_loop is asyncio.get_running_loop():
         await _pool.close()
-        _pool = None
+    _pool = None
+    _pool_loop = None
 
 
 def check_pg_trgm() -> bool:

@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Callable, Optional, Protocol
 
-from rapidfuzz import fuzz, process
+from rapidfuzz import fuzz, process, utils
 from rapidfuzz.distance import DamerauLevenshtein
 from spacy.tokens import Doc, Span
 
@@ -64,6 +64,10 @@ def _looks_like_query_word(word: str) -> bool:
     return any(DamerauLevenshtein.distance(w, g) == 1
                for g in _GENERIC_ALONE | _METRIC_LEMMAS if abs(len(g) - len(w)) <= 1)
 
+_LEGAL_SUFFIXES = {
+    "inc", "incorporated", "corp", "corporation", "ltd", "limited", "llc", "plc", "gmbh", "co", "company", "ag", "sa",
+}
+
 _GENERIC_ALONE = {
     # business words that stand in for the SUBJECT of a query, not an entity
     "net", "new", "gross", "major", "majors", "cloud", "security", "platform",
@@ -71,6 +75,8 @@ _GENERIC_ALONE = {
     # query grammar — these describe the shape of the request, never a company
     "account", "accounts", "customer", "customers", "client", "clients",
     "company", "companies", "logo", "logos", "deal", "deals",
+    "parent", "parents", "child", "subsidiary", "subsidiaries", "area", "areas", "theater", "theatre",
+    "exit", "ending", "total", "overall", "stage", "stages", "pipeline", "plan", "attach", "undeployed",
     "geo", "geos", "geography", "geographies", "region", "regions",
     "product", "products", "segment", "segments", "sector", "sectors",
     "quarter", "quarters", "year", "years", "month", "months",
@@ -78,12 +84,79 @@ _GENERIC_ALONE = {
     "rate", "rates", "percent", "percentage", "ratio", "share", "amount", "count", "number", "numbers",
     "breakdown", "split", "contribution", "profile", "performance", "summary", "detail", "details",
     "difference", "comparison", "change", "changes", "increase", "decrease", "value", "values",
-} | _PLAIN_DEEP_PRODUCTS
+    # hierarchy / level wording ("all L1 level products", "by tier")
+    "level", "levels", "l1", "l2", "l3", "l4", "l5", "hierarchy", "tier", "tiers",
+    "family", "families", "category", "categories", "line", "lines",
+    # month names ("ARR in October 2026")
+    "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november",
+    "december", "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "sept", "oct", "nov", "dec",
+} | _PLAIN_DEEP_PRODUCTS | _LEGAL_SUFFIXES
 
 # The vendor is never its own customer. "ARR for Zscaler" means total ARR,
 # not an account filter. Keep this tight — only the vendor name + obvious
 # abbreviations; adding more here hides real accounts.
 _VENDOR_SELF = {"zscaler", "zs"}
+
+
+def is_vendor_name(text: str) -> bool:
+    """'Zscaler', "Zscaler's", 'Zscaler, Inc.', 'Zscaler Inc' — the vendor itself, never a customer filter."""
+    t = text.lower().replace("’s", "").replace("'s", "")
+    core = [w for w in re.findall(r"[a-z0-9]+", t) if w not in _LEGAL_SUFFIXES]
+    return bool(core) and all(w in _VENDOR_SELF for w in core)
+
+
+# Function words (articles, prepositions, auxiliaries, wh-words, conjunctions) that a
+# typo can disguise as a proper noun: "teh arr" -> 'teh' is NOT a company.
+_FUNCTION_WORDS = {
+    "the", "for", "and", "with", "what", "whats", "are", "was", "were", "per", "vs",
+    "from", "this", "that", "than", "then", "how", "who", "why", "when", "does", "did",
+    "has", "have", "had", "can", "all", "any", "our", "its", "their", "into", "over",
+    "about", "each", "every", "which", "give", "show", "tell", "list", "find", "get",
+}
+_CONNECTORS = {"of", "the", "&", "de", "von", "van"}
+
+
+_BUSINESS_NOUNS = {"target", "targets", "opportunity", "opportunities", "candidate", "candidates",
+                   "prospect", "prospects", "lead", "leads"}
+_TARGET_MODIFIERS = {"upsell", "upsells", "potential", "expansion", "cross-sell", "crosssell", "new", "growth", "target"}
+
+
+def _is_business_noun(tok) -> bool:
+    """'upsell targets' / 'potential opportunities' are sales wording, not a company ('Target', capitalised, still is)."""
+    w = tok.lower_
+    if w not in _BUSINESS_NOUNS or tok.text != w:
+        return False
+    if w.endswith("s"):
+        return True
+    return tok.i > 0 and tok.doc[tok.i - 1].lower_ in _TARGET_MODIFIERS
+
+
+_VOCAB: set[str] = set()
+
+
+def set_vocabulary(words) -> None:
+    """Domain words (metric keywords / aliases) that are never a company when typed lowercase or sentence-initial."""
+    _VOCAB.clear()
+    _VOCAB.update(w.lower() for w in words if len(w) >= 3)
+
+
+def _is_vocab(tok) -> bool:
+    w = tok.lower_
+    return w in _VOCAB and (tok.text == w or tok.i == 0)
+
+
+def _is_grammar_typo(word: str, known_words: set[str]) -> bool:
+    """True iff a lowercase-typed `word` is a function word / lead verb or one typo away
+    from one — unless it is genuinely a word inside a known company name."""
+    w = word.lower()
+    if word != w or len(w) < 3 or len(w) > 6 or w in known_words:
+        return False
+    if w in _FUNCTION_WORDS or w in _LEAD_VERBS:
+        return True
+    return any(
+        abs(len(g) - len(w)) <= 1 and DamerauLevenshtein.distance(w, g) == 1
+        for g in _FUNCTION_WORDS | {v for v in _LEAD_VERBS if len(v) >= 4}
+    )
 
 
 _CHAIN_GAP_RE = re.compile(r"^\s*(?:,\s*)?(?:and|or|vs\.?|versus|,)\s*$", re.I)
@@ -126,6 +199,7 @@ class AccountFinder:
         self._lookup = lookup
         self._known = known_names or []
         self._known_lower = {n.lower(): n for n in self._known}
+        self._known_words = {w for n in self._known_lower for w in re.findall(r"[a-z0-9]+", n)}
         self._fuzzy_threshold = fuzzy_threshold
 
     # ── candidate chunking ────────────────────────────────────────────────
@@ -141,7 +215,8 @@ class AccountFinder:
         i = 0
         while i < len(doc):
             t = doc[i]
-            if t.pos_ not in ("PROPN", "NOUN") or t.is_stop or in_blocked(t) or is_metric_word(t):
+            if (t.pos_ not in ("PROPN", "NOUN") or t.is_stop or in_blocked(t) or is_metric_word(t)
+                    or _is_grammar_typo(t.text, self._known_words) or _is_business_noun(t) or _is_vocab(t)):
                 i += 1
                 continue
             if t.i == 0 and t.lemma_.lower() in _LEAD_VERBS:
@@ -151,6 +226,8 @@ class AccountFinder:
             while j + 1 < len(doc):
                 nxt = doc[j + 1]
                 if in_blocked(nxt) or is_metric_word(nxt) or _looks_like_query_word(nxt.text):
+                    break
+                if nxt.lower_ not in _CONNECTORS and (_is_grammar_typo(nxt.text, self._known_words) or _is_business_noun(nxt) or _is_vocab(nxt)):
                     break
                 # Allow connectors inside names: "Bank of America", "Procter & Gamble"
                 if nxt.lower_ in {"of", "the", "&", "de", "von", "van"} \
@@ -166,8 +243,9 @@ class AccountFinder:
             text_low = span.text.lower()
             lemma_low = " ".join(t.lemma_.lower() for t in span)
             root = text_low.rstrip("s").rstrip("'")           # strip plural/possessive
-            if (text_low in _GENERIC_ALONE or lemma_low in _GENERIC_ALONE
-                    or text_low in _VENDOR_SELF or root in _VENDOR_SELF):
+            all_generic = all(t.lower_.rstrip(".") in _GENERIC_ALONE or t.lemma_.lower() in _GENERIC_ALONE for t in span)
+            if (text_low in _GENERIC_ALONE or lemma_low in _GENERIC_ALONE or all_generic
+                    or text_low in _VENDOR_SELF or root in _VENDOR_SELF or is_vendor_name(span.text)):
                 i = j + 1
                 continue
             chunks.append(span)
@@ -228,7 +306,7 @@ class AccountFinder:
             # Don't fuzzy-confirm tokens shorter than 4 chars — too many false positives
             # (e.g. "rhe" matching "Rheem" when the user meant "the").
             if self._known and len(c.text) >= 4:
-                best = process.extractOne(c.text, self._known, scorer=fuzz.WRatio)
+                best = process.extractOne(c.text, self._known, scorer=fuzz.WRatio, processor=utils.default_process)
                 if best and best[1] >= self._fuzzy_threshold:
                     out[c.start] = (best[0], "fuzzy", float(best[1]) / 100.0)
         return out

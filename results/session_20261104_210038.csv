@@ -1,2 +1,0 @@
-timestamp,question,metric,source,attempts,row_count,elapsed_ms,success,sql
-2026-11-04T21:00:39.305622,top 5 accounts by ARR in EMEA FY 2026 Q1,ARR,fallback,3,5,0.01,True,"SELECT account_id, end_user_name, SUM(arr) AS total_arr FROM data_arr WHERE fiscal_quarter = 'FY 2026 Q1'   AND cfy_geo = 'EMEA' GROUP BY account_id, end_user_name ORDER BY total_arr DESC LIMIT 5;"

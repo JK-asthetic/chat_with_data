@@ -1,2 +1,0 @@
-timestamp,question,metric,source,attempts,row_count,elapsed_ms,success,sql
-2026-11-04T21:09:09.269230,compare ARR and ACV for Siemens in Q1 FY 2026,ACV,fallback,3,10,8.4,True,"SELECT product_l1, SUM(adjusted_acv) AS total_adjusted_acv FROM data_acv WHERE fiscal_quarter = 'FY 2026 Q1'   AND account_name = 'W S ATKINS & PARTNERS OVERSEAS' GROUP BY product_l1 ORDER BY total_acv DESC LIMIT 10;"

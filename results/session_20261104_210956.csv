@@ -1,3 +1,0 @@
-timestamp,question,metric,source,attempts,row_count,elapsed_ms,success,sql
-2026-11-04T21:09:56.707861,compare ARR and ACV for Siemens in Q1 FY 2026,ARR,fallback,3,10,0.01,True,"SELECT product_l1, SUM(arr) AS total_arr FROM data_arr WHERE fiscal_quarter = 'FY 2026 Q1'   AND end_user_name = 'W S ATKINS & PARTNERS OVERSEAS' GROUP BY product_l1 ORDER BY total_arr DESC LIMIT 10;"
-2026-11-04T21:09:56.707861,compare ARR and ACV for Siemens in Q1 FY 2026,ACV,fallback,3,10,8.66,True,"SELECT product_l1, SUM(adjusted_acv) AS total_adjusted_acv FROM data_acv WHERE fiscal_quarter = 'FY 2026 Q1'   AND account_name = 'W S ATKINS & PARTNERS OVERSEAS' GROUP BY product_l1 ORDER BY total_acv DESC LIMIT 10;"

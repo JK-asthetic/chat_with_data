@@ -1,16 +1,39 @@
-"""Product Tool — resolves raw product phrases to ProductFilter objects.
+"""Product Tool — classifies raw product phrases against dim_product_hierarchy (L1..L5).
 
-No LLM. Uses product hierarchy loaded from schema.yaml and catalog rules.
+No LLM. Every phrase is matched to hierarchy nodes (name + level + full path):
+  * exactly one node  -> resolved ProductFilter at that level
+  * several nodes     -> ambiguous; every distinct path is returned as a candidate for the user
+    (the same name can live at different levels / branches, e.g. 'Firewall')
+Synonyms in schema.yaml (product_aliases) only translate a phrase to a hierarchy name.
 """
 from __future__ import annotations
 
-from typing import Any
+import re
+from typing import Optional
+
+from core import hierarchy
 from core.settings import get_schema
 from pipeline.models import ProductFilter
 
+_LEVEL_RE = re.compile(
+    r"\b(?:all|each|every|by|per|across|for)\s+(?:the\s+)?(?:product\s+)?(?:l|level\s*|lvl\s*)([1-5])(?:\s*level)?(?:\s*products?)?\b"
+    r"|\bl\s?([1-5])\s*(?:level\s*)?products?\b"
+    r"|\bproducts?\s+(?:at\s+)?(?:l|level\s*)\s?([1-5])\b"
+    r"|\b(?:level|lvl)\s*([1-5])\s*products?\b",
+    re.IGNORECASE,
+)
+
+
+def detect_product_level(text: str) -> Optional[int]:
+    """'all L1 level products' / 'by L3 product' -> 1 / 3 (a breakdown level, not a filter)."""
+    m = _LEVEL_RE.search(text or "")
+    if not m:
+        return None
+    return int(next(g for g in m.groups() if g))
+
 
 def _drop_ancestors(filters: list[ProductFilter]) -> list[ProductFilter]:
-    """'ZIA SWG ARR' names a product and its own sub-product: narrower one wins."""
+    """'ZIA SWG ARR' names a product and its own sub-product: the narrower one wins."""
     paths = [f.path for f in filters]
     return [
         f for f, p in zip(filters, paths)
@@ -18,79 +41,50 @@ def _drop_ancestors(filters: list[ProductFilter]) -> list[ProductFilter]:
     ]
 
 
+def _collapse_descendants(nodes: list[hierarchy.Node]) -> list[hierarchy.Node]:
+    """If a candidate sits inside another candidate's subtree, the broader one already covers it."""
+    return [n for n in nodes if not any(o is not n and o.level < n.level and n.path[:o.level] == o.path for o in nodes)]
+
+
+def _nodes_for(raw: str, aliases: dict[str, str]) -> list[hierarchy.Node]:
+    key = raw.strip()
+    nodes = hierarchy.find(key)                       # the phrase is itself a hierarchy name
+    if not nodes:
+        canon = aliases.get(key.upper())              # synonym -> hierarchy name
+        if canon:
+            nodes = hierarchy.find(canon)
+    if not nodes:
+        nodes = hierarchy.fuzzy(key)                  # typo tolerance
+    if not nodes:
+        partial = list(dict.fromkeys(v for a, v in aliases.items() if key.upper() in a or a in key.upper()))
+        for canon in partial:
+            nodes.extend(hierarchy.find(canon))
+    return _collapse_descendants(nodes)
+
+
 def resolve_products(
     products_raw: list[str],
 ) -> tuple[list[ProductFilter], bool, dict[str, list[str]], dict[str, list[list[str]]]]:
-    """Maps raw product phrases → ProductFilter objects.
+    """Maps raw product phrases -> ProductFilter objects.
 
     Returns:
-      (resolved, ambiguous, candidates_map, hierarchy_candidates)
+      (resolved, ambiguous, candidates_map (unused, kept for API stability), hierarchy_candidates)
+    where hierarchy_candidates maps a raw phrase to its alternative full paths (l1..lk).
     """
-    schema = get_schema()
-    aliases: dict[str, str] = schema.get("product_aliases", {})
-    hierarchy: dict[str, Any] = schema.get("product_hierarchy", {})
+    aliases: dict[str, str] = get_schema().get("product_aliases", {})
 
     resolved: list[ProductFilter] = []
     ambiguous = False
-    candidates: dict[str, list[str]] = {}
     hierarchy_candidates: dict[str, list[list[str]]] = {}
 
     for raw in products_raw:
         if not raw:
             continue
-        key = raw.upper().strip()
-
-        # Check exact alias
-        canonical_name = aliases.get(key)
-        if canonical_name:
-            # Check if canonical name is an L1 family
-            if canonical_name in hierarchy:
-                resolved.append(ProductFilter(l1=canonical_name, deepest_level=1))
-                continue
-            # Check if canonical name is an L2 under some family
-            found_l2 = False
-            for l1_name, l1_info in hierarchy.items():
-                l2_values = l1_info.get("l2_values", [])
-                if any(canonical_name.lower() == v.lower() for v in l2_values):
-                    resolved.append(ProductFilter(l1=l1_name, l2=canonical_name, deepest_level=2))
-                    found_l2 = True
-                    break
-            if found_l2:
-                continue
-            resolved.append(ProductFilter(l1=canonical_name, deepest_level=1))
-            continue
-
-        # Check direct match in L1 hierarchy keys
-        matched_l1 = next((k for k in hierarchy if k.upper() == key), None)
-        if matched_l1:
-            resolved.append(ProductFilter(l1=matched_l1, deepest_level=1))
-            continue
-
-        # Check direct match in L2 values across hierarchy
-        l2_matches = []
-        for l1_name, l1_info in hierarchy.items():
-            for v in l1_info.get("l2_values", []):
-                if v.upper() == key:
-                    l2_matches.append((l1_name, v))
-
-        if len(l2_matches) == 1:
-            resolved.append(ProductFilter(l1=l2_matches[0][0], l2=l2_matches[0][1], deepest_level=2))
-            continue
-        elif len(l2_matches) > 1:
-            hierarchy_candidates[raw] = [[m[0], m[1]] for m in l2_matches]
-            ambiguous = True
-            continue
-
-        # Partial matching across aliases
-        partials = list(dict.fromkeys(
-            val for alias, val in aliases.items()
-            if key in alias or alias in key
-        ))
-        if len(partials) == 1:
-            resolved.append(ProductFilter(l1=partials[0], deepest_level=1))
-        elif partials:
-            candidates[raw] = partials
+        nodes = _nodes_for(raw, aliases)
+        if len(nodes) == 1:
+            resolved.append(ProductFilter.from_path(nodes[0].path))
+        elif len(nodes) > 1:
+            hierarchy_candidates[raw] = [list(n.path) for n in nodes]
             ambiguous = True
 
-    return _drop_ancestors(resolved), ambiguous, candidates, hierarchy_candidates
-
+    return _drop_ancestors(resolved), ambiguous, {}, hierarchy_candidates

@@ -1,21 +1,18 @@
 # =============================================================================
 # Enterprise Metric Registry
 # =============================================================================
-# Each entry key is the canonical metric name used throughout the system.
-# Fields:
-#   display_name          Human-readable metric name shown in UI/responses
-#   description           What the metric measures
-#   table                 Postgres table name (or CSV stem in dry-run)
-#   value_column          Column to SUM / AVG / COUNT
-#   aggregation           SUM | AVG | COUNT
-#   variant               snapshot | delta | downsell | target | nnacv
-#   agent_class           Dotted import path to the responsible MetricAgent
-#   keywords              Tokens the LLM classifier watches for this metric
-#   id_columns            Columns included in SELECT + GROUP BY for identity
-#   snapshot_date_column  (snapshot variant only) date-filter column
-#   always_filters        k→v pairs injected into every WHERE clause
-#   filter_columns        logical_name → actual_column mapping for dimensions
-#   sql_rules             Metric-specific SQL generation rules
+# Each key is the canonical metric name used throughout the system.
+#   display_name / description   what the metric is (the definition)
+#   table / value_column / aggregation / variant   primary table and measure
+#   agent_class        dotted path of the MetricAgent
+#   keywords / aliases words the classifier watches for (aliases = dashboard tile names)
+#   classifier_hint    one-paragraph routing knowledge shown to the classifier
+#   cuts               which cuts exist: product | account | parent  (a missing cut is NOT available)
+#   default_period     what period is used when the question names none
+#   spec               generic SpecAgent config: kind (period semantics) and tables (one per source table)
+#   checks             invariants every generated SQL must satisfy:  "regex => message"
+#   sql_rules          definitions and pitfalls shown to the SQL generator
+# Reference queries live in sql/standard.py (mirrors executive_briefing_metrics.sql).
 # =============================================================================
 
 ARR:
@@ -28,6 +25,10 @@ ARR:
   aggregation: SUM
   variant: snapshot
   agent_class: "agents.arr_agent.ARRAgent"
+  aliases: ["exit ARR", "ending ARR", "ARR snapshot", "ARR trend"]
+  classifier_hint: "Exit ARR = ARR at the LAST month of a quarter (point-in-time stock, never summed across quarters). Any question about ARR, exit ARR, book of business, top accounts/products/geos by ARR, ARR trend, ARR renewing in a quarter."
+  cuts: [product, account, parent]
+  default_period: "latest complete quarter; trend = trailing 8 quarters; ongoing/upcoming quarter -> last closed snapshot"
   keywords:
     - arr
     - annual recurring revenue
@@ -43,7 +44,8 @@ ARR:
   filter_columns:
     geo: cfy_geo
     geography: cfy_geo
-    region: cfy_geo
+    area: cfy_area
+    region: cfy_region
     segment: market_segment
     market_segment: market_segment
     product: product_l1
@@ -55,239 +57,282 @@ ARR:
     account: end_user_name
     account_name: end_user_name
   sql_rules:
-    - "Always filter by fiscal_month_end_date to get a single snapshot; default to the latest available date if not specified."
-    - "Use cfy_geo (NOT geo) for geographic filtering on this table."
-    - "SUM(arr) gives total ARR; never use AVG for ARR calculations."
-    - "account_id + end_user_name together uniquely identify an account row in this table."
+    - "ARR is a point-in-time stock. Each fiscal_quarter has exactly one snapshot date, so a single quarter is filtered with fiscal_quarter = 'FY 2027 Q1'. The WHERE block already carries the resolved period — never replace it with MAX(fiscal_month_end_date)."
+    - "NEVER SUM arr across several quarters unless GROUP BY fiscal_quarter (trend / compare). Summing snapshots double counts."
+    - "fiscal_month holds ONLY the quarter's last month ('FY 2027 Q1 OCT'): a month the user names maps to its quarter's snapshot (already applied in the WHERE block). An ongoing/upcoming quarter has no snapshot — the last closed one is used (already applied)."
+    - "RENEWAL: renewal quarter of a contract = the fiscal quarter of its end_date (Aug-Jul fiscal year): 'FY ' || EXTRACT(YEAR FROM end_date + INTERVAL '5 months')::int || ' Q' || ((EXTRACT(MONTH FROM end_date + INTERVAL '5 months')::int - 1) / 3 + 1). ARR renewing in a quarter = rows of the PREVIOUS quarter's snapshot whose end_date falls inside that quarter — the WHERE block already carries that snapshot and the end_date bounds. To show an account's next renewal quarter use MIN(end_date) FILTER (WHERE end_date > fiscal_month_end_date) converted with the formula. NEVER present the snapshot quarter as the renewal quarter."
+    - "Company filters in the WHERE block use end_user_id (end user) or end_user_parent_id (parent company). Copy them verbatim — they are NOT account_id and must not be rewritten to account_id."
+    - "Account lists / rankings: GROUP BY account_id and select (ARRAY_AGG(end_user_name ORDER BY arr DESC))[1] AS account_name. A single company: GROUP BY end_user_id and select MAX(end_user_name) AS account_name (a customer can span several account_id values). There is no account_name column."
+    - "Breakdown columns: product -> product_l1 / product_l2 / product_l3; geo -> cfy_geo / cfy_area / cfy_region (never geo); segment -> market_segment; deal type -> mrr_order_type; parent company -> end_user_parent_id + MAX(end_user_parent_name); quarter -> fiscal_quarter."
+    - "SUM(arr) gives total ARR (credits are negative rows and must stay in the sum); never AVG ARR. Share of total = SUM(arr) / NULLIF(SUM(SUM(arr)) OVER (), 0)."
+    - "Account counts: COUNT(DISTINCT account_id)."
     - "Do not apply aggregation_level filter — this table is already at the correct granularity."
 
 ACV:
-  display_name: "Annual Contract Value"
+  display_name: "Annual Contract Value (all bookings)"
   description: >
-    Total annual contract value of bookings in a given period.
-    Represents new and expansion deals closed, adjusted for splits and carves.
+    Total bookings ACV of every deal motion INCLUDING renewals (SUM(adjusted_acv)). Not the same as
+    N/U ACV or NNACV, which exclude renewals.
   table: data_acv
   value_column: adjusted_acv
   aggregation: SUM
   variant: delta
-  agent_class: "agents.acv_agent.ACVAgent"
-  keywords:
-    - acv
-    - annual contract value
-    - bookings
-    - contract value
-    - new bookings
-    - closed bookings
-  id_columns:
-    - account_id
-    - account_name
+  agent_class: "agents.spec_agent.SpecAgent"
+  aliases: ["total ACV", "bookings", "contract value"]
+  classifier_hint: "Total bookings ACV including renewals. If the user says new/upsell/new-logo ACV use NU_ACV; net new ACV -> NNACV."
+  cuts: [product, account, parent]
+  default_period: "latest complete quarter"
+  spec: {kind: flow, tables: [data_acv]}
+  keywords: [acv, annual contract value, bookings, contract value, closed bookings, total acv]
+  id_columns: [account_id, account_name]
   snapshot_date_column: null
   always_filters: {}
-  filter_columns:
-    geo: geo
-    geography: geo
-    region: geo
-    segment: market_segment
-    market_segment: market_segment
-    product: product_l1
-    product_family: product_l1
-    fiscal_quarter: fiscal_quarter
-    quarter: fiscal_quarter
-    fiscal_year: fiscal_year
-    year: fiscal_year
-    account: account_name
-    account_name: account_name
-    deal_type: carve_split_type
-    carve_type: carve_split_type
+  filter_columns: {geo: geo, product: product_l1, fiscal_quarter: fiscal_quarter, account: account_name}
   sql_rules:
-    - "Use geo (NOT cfy_geo) for geographic filtering on this table."
-    - "SUM(adjusted_acv) gives total ACV; adjusted_acv accounts for carve/split adjustments."
-    - "Filter by fiscal_quarter or fiscal_year to scope bookings periods."
-    - "account_id + account_name together identify a deal/account in this table."
-    - "Do not filter out Renewal carve_split_type unless explicitly requested — that is NNACV logic."
+    - "SUM(adjusted_acv) over every carve_split_type (renewals included). Only a top-level geo column exists on data_acv."
+    - "ACV is a flow: summing several quarters is correct; GROUP BY fiscal_quarter only for trend/compare."
+
+NU_ACV:
+  display_name: "New / Upsell ACV (N/U ACV) and Logos"
+  description: >
+    ACV from New Logo + New-to-Product + Upsell deal motions (renewals excluded), plus Logos = distinct
+    accounts with positive ACV. Trend split: new business = New Logo + New-to-Product; existing = Upsell.
+  table: data_acv
+  value_column: adjusted_acv
+  aggregation: SUM
+  variant: delta
+  agent_class: "agents.spec_agent.SpecAgent"
+  aliases: ["N/U ACV", "NU ACV", "new and upsell ACV", "new business ACV", "new logos", "logos won", "new to product ACV", "upsell ACV"]
+  classifier_hint: "N/U ACV = New Logo + New-to-Product + Upsell bookings (no renewals) and the number of logos. 'New logo' questions use only the New Logo motions. Logos are distinct accounts, NEVER additive across products or parents."
+  cuts: [product, account, parent]
+  default_period: "latest complete quarter; trend = trailing 8 quarters"
+  spec: {kind: flow, tables: [data_acv]}
+  keywords: [n/u acv, nu acv, new and upsell acv, new logo, new logos, logos, new business, new to product, ntp, upsell, new bookings]
+  id_columns: [account_id, account_name]
+  snapshot_date_column: null
+  always_filters: {}
+  filter_columns: {geo: geo, product: product_l1, fiscal_quarter: fiscal_quarter, account: account_name}
+  checks:
+    - "carve_split_type => N/U ACV must filter the deal motion (carve_split_type)."
+    - "new_logo => Use the normalised motion list lower(replace(replace(trim(carve_split_type),'-','_'),' ','_')) IN ('new_logo','new_cust',...,'upsell') exactly as in the standard query."
+    - "upsell|new_cust => The N/U list must contain the New Logo AND New-to-Product AND Upsell spellings (renewals excluded)."
+  sql_rules:
+    - "N/U ACV = SUM(adjusted_acv) over the normalised carve_split_type list in the standard query. NEVER include Renewal. NEVER compare the raw spelling."
+    - "Logos = COUNT(DISTINCT account_id) FILTER (WHERE adjusted_acv > 0). Do NOT add logos across products or parents (an account can buy several products); for a company total run the same count without grouping."
+    - "New-logo ACV / top new logos = only the new_logo, new_cust, new_customer, newlogo motions, HAVING SUM(adjusted_acv) > 0."
+    - "Trend split: new_biz = motions other than upsell; existing_upsell = lower(trim(carve_split_type)) = 'upsell'."
+    - "Only a top-level geo exists on data_acv; the parent cut is end_user_parent_id / end_user_parent_name."
 
 NNACV:
-  display_name: "Net New Annual Contract Value"
+  display_name: "Net New ACV (NNACV)"
   description: >
-    Net New ACV: total bookings excluding renewals. Measures new logo and
-    expansion deal value only. Renewal carve_split_type rows are always excluded.
+    NNACV = N/U ACV + Churn (as a negative number) + Swap. N/U ACV comes from data_acv, churn and swap from
+    data_inc_arr (Level L3). Only product and parent cuts exist (no account-level churn/swap/NNACV).
   table: data_acv
   value_column: adjusted_acv
   aggregation: SUM
   variant: nnacv
-  agent_class: "agents.acv_agent.ACVAgent"
-  keywords:
-    - nnacv
-    - net new acv
-    - net new bookings
-    - net new contract value
-    - new logo
-    - expansion bookings
-    - non-renewal bookings
-  id_columns:
-    - account_id
-    - account_name
+  agent_class: "agents.spec_agent.SpecAgent"
+  aliases: ["net new ACV", "NNACV", "net new bookings", "net new business"]
+  classifier_hint: "NNACV = N/U ACV + churn(negative) + swap. Needs data_acv AND data_inc_arr. Available per product or per parent company only — NOT per account (data_inc_arr.account_id is 100% NULL). It is NOT 'ACV excluding renewals'."
+  cuts: [product, parent]
+  default_period: "latest complete quarter; trend = trailing 8 quarters"
+  spec: {kind: flow, tables: [data_acv, data_inc_arr]}
+  keywords: [nnacv, net new acv, net new bookings, net new business, net new logo acv]
+  id_columns: [end_user_parent_id]
   snapshot_date_column: null
-  always_filters:
-    carve_split_type__not_in:
-      - "Renewal"
-  filter_columns:
-    geo: geo
-    geography: geo
-    region: geo
-    segment: market_segment
-    market_segment: market_segment
-    product: product_l1
-    product_family: product_l1
-    fiscal_quarter: fiscal_quarter
-    quarter: fiscal_quarter
-    fiscal_year: fiscal_year
-    year: fiscal_year
-    account: account_name
-    account_name: account_name
-    deal_type: carve_split_type
+  always_filters: {}
+  filter_columns: {geo: geo, product: product_l1, fiscal_quarter: fiscal_quarter}
+  checks:
+    - "aggregation_level\\s*=\\s*'Level L3' => The churn/swap part must filter data_inc_arr with aggregation_level = 'Level L3' (otherwise counted 3x)."
+    - "new_logo => The N/U ACV part must use the normalised New Logo / New-to-Product / Upsell motion list."
+    - "swap_positive => The swap part is SUM(swap_positive + swap_negative)."
   sql_rules:
-    - "ALWAYS add: WHERE carve_split_type NOT IN ('Renewal') — this is mandatory for NNACV."
-    - "Use geo (NOT cfy_geo) for geographic filtering on this table."
-    - "SUM(adjusted_acv) after excluding Renewals gives NNACV."
-    - "Never remove the Renewal exclusion filter even if user asks for 'all' deals."
-
-INCR_ARR:
-  display_name: "Incremental ARR"
-  description: >
-    Net change in ARR for a given period (new + expansion − churn − contraction).
-    Aggregated at Level L3 (end_user_parent). Positive = ARR growth, negative = ARR decline.
-  table: data_inc_arr
-  value_column: arr_change
-  aggregation: SUM
-  variant: delta
-  agent_class: "agents.incr_arr_agent.IncrARRAgent"
-  keywords:
-    - incremental arr
-    - incr arr
-    - arr change
-    - arr delta
-    - arr growth
-    - arr movement
-    - net arr
-    - net new arr
-  id_columns:
-    - end_user_parent_id
-    - end_user_parent_name
-  snapshot_date_column: null
-  always_filters:
-    aggregation_level: "Level L3"
-  filter_columns:
-    geo: cfy_geo
-    geography: cfy_geo
-    region: cfy_geo
-    segment: market_segment
-    market_segment: market_segment
-    product: product_l1
-    product_family: product_l1
-    fiscal_quarter: fiscal_quarter
-    quarter: fiscal_quarter
-    account: end_user_parent_name
-    account_name: end_user_parent_name
-  sql_rules:
-    - "ALWAYS filter: WHERE aggregation_level = 'Level L3' — mandatory for correct granularity."
-    - "Use SUM(arr_change) — positive values are ARR growth, negative are decline."
-    - "id_columns are end_user_parent_id and end_user_parent_name (parent-level, not leaf)."
-    - "Use cfy_geo for geographic filtering."
-    - "To get only new ARR: add WHERE arr_change_type = 'New'. For churn: use CHURN metric instead."
+    - "NNACV = N/U ACV + churn_neg + swap, where N/U ACV = SUM(adjusted_acv) over the normalised N/U motions (data_acv), churn_neg = SUM(downsell) FILTER (WHERE comment IN ('Customer Churn','ARR Churn')) (negative), swap = SUM(swap_positive + swap_negative) (data_inc_arr, aggregation_level = 'Level L3')."
+    - "Each part is aggregated separately and joined with a FULL JOIN on equality (never a cross product of the two tables)."
+    - "There is no account-level NNACV: use product or parent (end_user_parent_id)."
+    - "The WHERE blocks per table are pre-resolved (geo column differs: data_acv.geo vs data_inc_arr.cfy_geo)."
 
 CHURN:
-  display_name: "Churn / Downsell ARR"
+  display_name: "Churn"
   description: >
-    ARR lost due to customer churn or product downsell, measured at Level L3
-    (end_user_parent). Values are typically negative; take ABS() for reporting.
+    ARR lost to churn in the quarter, reported as a POSITIVE loss: -SUM(downsell) where comment is
+    Customer Churn or ARR Churn (data_inc_arr, Level L3). Product and parent only.
   table: data_inc_arr
   value_column: downsell
   aggregation: SUM
   variant: downsell
-  agent_class: "agents.churn_agent.ChurnAgent"
-  keywords:
-    - churn
-    - downsell
-    - lost arr
-    - customer churn
-    - attrition
-    - arr attrition
-    - cancelled arr
-    - lost revenue
-  id_columns:
-    - end_user_parent_id
-    - end_user_parent_name
+  agent_class: "agents.spec_agent.SpecAgent"
+  aliases: ["churn", "lost ARR", "ARR churn", "customer churn", "downsell", "top churned"]
+  classifier_hint: "Churn = -SUM(downsell) for comment Customer Churn / ARR Churn, at aggregation_level 'Level L3'. Available per product or parent company, NOT per account. Swaps are a separate metric (SWAP). Why accounts churned -> CHURN_REASON."
+  cuts: [product, parent]
+  default_period: "latest complete quarter; trend = trailing 8 quarters"
+  spec: {kind: flow, tables: [data_inc_arr]}
+  keywords: [churn, churned, lost arr, downsell, contraction, attrition]
+  id_columns: [end_user_parent_id, end_user_parent_name]
   snapshot_date_column: null
-  always_filters:
-    aggregation_level: "Level L3"
-  filter_columns:
-    geo: cfy_geo
-    geography: cfy_geo
-    region: geo
-    segment: market_segment
-    market_segment: market_segment
-    product: product_l1
-    product_family: product_l1
-    fiscal_quarter: fiscal_quarter
-    quarter: fiscal_quarter
-    account: end_user_parent_name
-    account_name: end_user_parent_name
+  always_filters: {}
+  filter_columns: {geo: cfy_geo, area: cfy_area, region: cfy_region, product: product_l1, segment: market_segment}
+  checks:
+    - "aggregation_level\\s*=\\s*'Level L3' => data_inc_arr must be filtered with aggregation_level = 'Level L3' (otherwise every figure is counted 3x)."
+    - "Customer Churn|downsell\\s*<\\s*0 => Churn must be restricted to comment IN ('Customer Churn','ARR Churn')."
   sql_rules:
-    - "ALWAYS filter: WHERE aggregation_level = 'Level L3' — mandatory."
-    - "SUM(downsell) — downsell values are negative; ABS(SUM(downsell)) for positive reporting."
-    - "Do not use arr_change column; use the downsell column specifically."
-    - "id_columns are end_user_parent_id and end_user_parent_name."
+    - "Churn (positive loss) = -SUM(downsell) FILTER (WHERE comment IN ('Customer Churn','ARR Churn')). Plain SUM(downsell) also contains swap downsell and is WRONG for churn."
+    - "ALWAYS aggregation_level = 'Level L3'. account_id is 100% NULL on this table: parent (end_user_parent_id/name) and product only."
+    - "Top churned parents: add is_merger_demerger IS NULL, end_user_parent_name IS NOT NULL and downsell < 0 (M&A rows excluded)."
+    - "Geo here is cfy_geo / cfy_area / cfy_region; segment is market_segment."
+
+SWAP:
+  display_name: "Swap"
+  description: >
+    Net ARR swapped between products in the quarter: SUM(swap_positive + swap_negative) over all rows of
+    data_inc_arr at Level L3. Product and parent only.
+  table: data_inc_arr
+  value_column: swap_impact
+  aggregation: SUM
+  variant: delta
+  agent_class: "agents.spec_agent.SpecAgent"
+  aliases: ["swap", "swaps", "product swap"]
+  classifier_hint: "Swap = SUM(swap_positive + swap_negative) at Level L3 (all rows, no comment filter). Shown together with churn. Product or parent only."
+  cuts: [product, parent]
+  default_period: "latest complete quarter; trend = trailing 8 quarters"
+  spec: {kind: flow, tables: [data_inc_arr]}
+  keywords: [swap, swaps, product swap, swap impact]
+  id_columns: [end_user_parent_id, end_user_parent_name]
+  snapshot_date_column: null
+  always_filters: {}
+  filter_columns: {geo: cfy_geo, product: product_l1}
+  checks:
+    - "aggregation_level\\s*=\\s*'Level L3' => data_inc_arr must be filtered with aggregation_level = 'Level L3'."
+    - "swap_positive => Swap = SUM(swap_positive + swap_negative)."
+  sql_rules:
+    - "Swap = SUM(swap_positive + swap_negative) over ALL rows (no comment filter), aggregation_level = 'Level L3'."
+    - "Product or parent only (account_id is NULL)."
+
+INCR_ARR:
+  display_name: "Incremental ARR"
+  description: >
+    Net ARR change over the quarter (curr_qtr_arr - prev_qtr_arr = arr_change) per parent and product, at
+    Level L3. Positive = growth, negative = decline.
+  table: data_inc_arr
+  value_column: arr_change
+  aggregation: SUM
+  variant: delta
+  agent_class: "agents.spec_agent.SpecAgent"
+  aliases: ["net ARR change", "incremental ARR", "ARR movement", "ARR growth in the quarter"]
+  classifier_hint: "Net quarter-over-quarter ARR change (arr_change) at Level L3. Product or parent only. For ARR level/trend use ARR."
+  cuts: [product, parent]
+  default_period: "latest complete quarter"
+  spec: {kind: flow, tables: [data_inc_arr]}
+  keywords: [incremental arr, net arr change, arr change, arr growth, arr movement, net new arr]
+  id_columns: [end_user_parent_id, end_user_parent_name]
+  snapshot_date_column: null
+  always_filters: {}
+  filter_columns: {geo: cfy_geo, product: product_l1}
+  checks:
+    - "aggregation_level\\s*=\\s*'Level L3' => data_inc_arr must be filtered with aggregation_level = 'Level L3'."
+  sql_rules:
+    - "SUM(arr_change) with aggregation_level = 'Level L3'. Parent/product only (account_id is NULL)."
 
 NACV:
-  display_name: "New ACV Target"
+  display_name: "NNACV Plan and Plan %"
   description: >
-    Quota / target bookings for new ACV by product hierarchy and fiscal quarter.
-    Used for attainment tracking: compare actual ACV against NACV targets.
+    NNACV plan, actual and plan attainment by product from data_nacv_target. plan = ACV - Churn;
+    actual = ACV Actual - GREATEST(Churn Actual, Churn); plan % = 100 * actual / plan. Product only, down to L3.
   table: data_nacv_target
   value_column: target
   aggregation: SUM
   variant: target
-  agent_class: "agents.nacv_target_agent.NACVTargetAgent"
-  keywords:
-    - nacv
-    - new acv target
-    - acv target
-    - quota
-    - target bookings
-    - sales target
-    - attainment target
-  id_columns:
-    - fy27_product_l1
-    - fy27_product_l2
-    - fiscal_quarter
+  agent_class: "agents.spec_agent.SpecAgent"
+  aliases: ["plan", "plan %", "plan attainment", "NNACV plan", "target", "quota attainment", "vs plan"]
+  classifier_hint: "Plan / plan % / attainment / target. Per product only (L1, L2, L3) — no account, parent, geo or segment cut. The table also holds non-product nodes (Federal, Zscaler, blank) and calls AI Security 'Security for AI'."
+  cuts: [product]
+  default_period: "latest complete quarter (targets also exist for future quarters)"
+  spec: {kind: flow, tables: [data_nacv_target]}
+  keywords: [plan, plan %, attainment, target, targets, quota, vs plan, nacv plan, nnacv plan]
+  id_columns: [fy27_product_l1]
   snapshot_date_column: null
   always_filters: {}
-  filter_columns:
-    product: fy27_product_l1
-    product_l1: fy27_product_l1
-    product_l2: fy27_product_l2
-    product_family: fy27_product_l1
-    fiscal_quarter: fiscal_quarter
-    quarter: fiscal_quarter
-    fiscal_year: fiscal_year
+  filter_columns: {product: fy27_product_l1, fiscal_quarter: fiscal_quarter}
+  checks:
+    - "target_type => Plan data is selected by target_type (SUM(target) FILTER (WHERE target_type = ...))."
   sql_rules:
-    - "No geographic (geo) filter column exists on this table — do not add geo filters."
-    - "No account-level filter exists — targets are at product × fiscal_quarter granularity."
-    - "SUM(target) aggregates across product families."
-    - "id_columns: fy27_product_l1, fy27_product_l2, fiscal_quarter."
-    - "To compute attainment: JOIN with data_acv and divide ACV by NACV target."
+    - "Several rows share one key, so ALWAYS SUM(target) FILTER (WHERE target_type = '...') per type."
+    - "plan = SUM(ACV) - SUM(Churn); actual = SUM('ACV Actual') - GREATEST(SUM('Churn Actual'), SUM('Churn')); plan_pct = ROUND(100 * actual / NULLIF(plan, 0))."
+    - "Product columns are fy27_product_l1..l3 (the table stops at L3). If a product row has no facts elsewhere, check the name first (AI Security vs Security for AI)."
+
+OPEN_PIPELINE:
+  display_name: "Open Pipeline"
+  description: >
+    Pipeline ACV of open opportunities closing in a quarter: pipeline_type_group = 'Open Pipeline' and stage not
+    Closed Won / Closed Lost, SUM(pipeline_acv) by opp_close_qtr (data_pippeline_curr). Also lost deals and stage views.
+  table: data_pippeline_curr
+  value_column: pipeline_acv
+  aggregation: SUM
+  variant: snapshot
+  agent_class: "agents.spec_agent.SpecAgent"
+  aliases: ["pipeline", "open pipeline", "open deals", "lost deals", "pipeline by stage", "pipeline coverage"]
+  classifier_hint: "Open pipeline = ACV of open opportunities by expected close quarter (default: the quarter AFTER the latest complete one). Lost deals = stage '7 - Closed Lost' in a quarter. By stage: 5A-5D collapsed into '5 - Procurement'. Product names follow the sales taxonomy. Per product, account or parent."
+  cuts: [product, account, parent]
+  default_period: "next quarter (open / stage views); latest complete quarter (lost deals); 'open deals' list = still open and closing in or before the latest complete quarter"
+  spec: {kind: pipeline, tables: [data_pippeline_curr]}
+  keywords: [pipeline, open pipeline, open deals, lost deals, closed lost, stage, opportunities, coverage, procurement]
+  id_columns: [account_id]
+  snapshot_date_column: null
+  always_filters: {}
+  filter_columns: {geo: geo, area: area, region: region, product: product_l1, segment: market_segment}
+  checks:
+    - "Closed Lost|Open Pipeline => Pipeline queries must select a pipeline kind: pipeline_type_group = 'Open Pipeline' (open) or stage = '7 - Closed Lost' (lost)."
+    - "Closed Won|Closed Lost => Open pipeline must exclude stage IN ('6 - Closed Won','7 - Closed Lost')."
+  sql_rules:
+    - "The table name really is data_pippeline_curr (double p)."
+    - "Open pipeline: pipeline_type_group = 'Open Pipeline' AND stage NOT IN ('6 - Closed Won','7 - Closed Lost'), SUM(pipeline_acv), by opp_close_qtr (already in the WHERE block)."
+    - "By stage: CASE WHEN stage ~ '^5[A-D]' THEN '5 - Procurement' ELSE stage END."
+    - "Lost deals: stage = '7 - Closed Lost' and opp_close_qtr = the quarter."
+    - "Parent cut: map account_id to the parent through data_arr (latest snapshot) as in the standard query; account names come from dim_account."
+    - "Product names (Internet Access and Platform, Private Access, AI Security, SecOps, ZS FLEX, Other Products) are the sales taxonomy, not the ARR hierarchy."
+
+RENEWAL_RISK:
+  display_name: "Churn Risk (renewal ARR in the risk window)"
+  description: >
+    Renewal ARR due two quarters after the snapshot quarter, from the latest renewal-risk snapshot
+    (max_fiscal_month_flag = 1): SUM(renewal_arr) by renewal_qtr. Per product (product_rl1), account or parent.
+  table: data_renewal_risk
+  value_column: renewal_arr
+  aggregation: SUM
+  variant: snapshot
+  agent_class: "agents.spec_agent.SpecAgent"
+  aliases: ["churn risk", "renewal risk", "at-risk renewals", "renewal ARR at risk", "ARR up for renewal"]
+  classifier_hint: "Churn risk = renewal ARR due in the risk window (quarter two after the latest complete quarter, from the latest risk snapshot). Products here are reporting products (product_rl1: SWG, Firewall, Private Access...). Per product, account or parent. For ARR renewing in a given quarter use ARR (end_date based)."
+  cuts: [product, account, parent]
+  default_period: "renewal quarter = latest complete quarter + 2"
+  spec: {kind: risk, tables: [data_renewal_risk]}
+  keywords: [churn risk, renewal risk, at risk, at-risk, renewal arr, risk window, high risk, up for renewal]
+  id_columns: [account_id]
+  snapshot_date_column: null
+  always_filters: {}
+  filter_columns: {product: product_rl1}
+  checks:
+    - "max_fiscal_month_flag\\s*=\\s*1 => data_renewal_risk must be filtered with max_fiscal_month_flag = 1 (latest snapshot only)."
+    - "renewal_qtr => Filter the renewal window with renewal_qtr."
+  sql_rules:
+    - "ALWAYS max_fiscal_month_flag = 1. Metric = SUM(renewal_arr) for renewal_qtr = the window quarter (already in the WHERE block)."
+    - "Product is product_rl1 (reporting taxonomy). The table has no name or parent column: names from dim_account, parent through data_arr as in the standard query."
 
 QTY:
   display_name: "Product Quantity"
   description: >
-    Unit quantity of products sold or active, measured at the M3 (end-of-quarter)
-    snapshot. Useful for understanding seat/unit counts alongside ARR.
+    Unit quantity of products sold or active. A monthly stock: one month is filtered
+    (a quarter means its last month). Useful for seat/unit counts alongside ARR.
   table: data_quantity
   value_column: product_l1_qty
   aggregation: SUM
   variant: snapshot
   agent_class: "agents.quantity_agent.QuantityAgent"
+  aliases: ["seats", "users", "licenses", "units"]
+  classifier_hint: "Quantity (seats/licenses) at the LAST available month of a quarter (monthly stock). Level-matched column: L1 -> product_l1_qty. Quantity renewing next month needs data_quantity joined to data_arr end_date."
+  cuts: [product, account, parent]
+  default_period: "last month of the latest complete quarter; ongoing/upcoming quarter -> previous quarter's last month"
   keywords:
     - quantity
     - qty
@@ -302,8 +347,7 @@ QTY:
     - account_name
     - product_l1
   snapshot_date_column: null
-  always_filters:
-    fiscal_month_m_of_quarter: "M3"
+  always_filters: {}
   filter_columns:
     product: product_l1
     product_l1: product_l1
@@ -316,94 +360,112 @@ QTY:
     segment: market_segment
     market_segment: market_segment
   sql_rules:
-    - "ALWAYS filter: WHERE fiscal_month_m_of_quarter = 'M3' to get end-of-quarter snapshot."
+    - "Quantity is a MONTHLY stock. The WHERE block carries the resolved month (fiscal_month = 'YYYY-MM-01' plus its fiscal_quarter) — keep it. A quarter means its last month; a month with no data yet falls back to the previous quarter's last month (already applied)."
+    - "NEVER SUM quantity across several months unless GROUP BY fiscal_month (trend). Product-wise: GROUP BY fiscal_month, product_l1 with COALESCE(SUM(product_l1_qty), 0). Company-wise: GROUP BY fiscal_month, account_id, account_name."
+    - "A company filter arrives as account_id IN (SELECT ...) — copy it verbatim; data_quantity has no end_user_id column."
     - "No geo/geography column exists on this table — do not add geo filters."
     - "SUM(product_l1_qty) aggregates units across the product_l1 family."
     - "Filter by fiscal_quarter to get quantity at a specific quarter-end."
 
-RENEWAL_RISK:
-  display_name: "Renewal Risk Score"
+ARPU:
+  display_name: "ARPU"
   description: >
-    Average risk score (0–100) predicting likelihood of customer churn at renewal.
-    Higher score = higher risk. Used to prioritise customer success interventions.
-  table: data_renewal_risk
-  value_column: renewal_risk_score
-  aggregation: AVG
+    Average ARR per unit = Exit ARR / Quantity for the same quarter (ARR at the quarter-end snapshot, quantity at the
+    quarter's last month, level-matched). Per product or account; parent ARPU is not provided.
+  table: data_arr
+  value_column: arr
+  aggregation: SUM
   variant: snapshot
-  agent_class: "agents.renewal_risk_agent.RenewalRiskAgent"
-  keywords:
-    - renewal risk
-    - renewal score
-    - churn risk
-    - at risk
-    - risk score
-    - renewal probability
-    - customer health
-    - at-risk accounts
-  id_columns:
-    - account_id
-    - account_name
+  agent_class: "agents.spec_agent.SpecAgent"
+  aliases: ["ARPU", "ARR per user", "ARR per seat", "average revenue per user"]
+  classifier_hint: "ARPU = exit ARR / quantity (NULLIF on the denominator). Needs data_arr AND data_quantity. Per product or account only — NO parent ARPU."
+  cuts: [product, account]
+  default_period: "latest complete quarter"
+  spec: {kind: composite_arpu, tables: [data_arr, data_quantity]}
+  keywords: [arpu, arr per user, arr per seat, arr per unit, average revenue per user]
+  id_columns: [product_l1]
   snapshot_date_column: null
   always_filters: {}
-  filter_columns:
-    geo: cfy_geo
-    geography: cfy_geo
-    region: cfy_geo
-    segment: market_segment
-    market_segment: market_segment
-    fiscal_quarter: fiscal_quarter
-    quarter: fiscal_quarter
-    risk_category: risk_category
-    account: account_name
-    account_name: account_name
+  filter_columns: {product: product_l1}
+  checks:
+    - "nullif => Divide with NULLIF(quantity, 0)."
   sql_rules:
-    - "Use AVG(renewal_risk_score) — this is a 0-100 risk score, not a dollar amount."
-    - "Filter by risk_category IN ('High','Medium','Low') for tiered risk queries."
-    - "To get dollar amount at risk: SUM(arr_at_risk) instead of AVG(renewal_risk_score)."
-    - "ORDER BY renewal_risk_score DESC to surface highest-risk accounts first."
-    - "Use cfy_geo for geographic filtering."
+    - "ARPU = exit ARR / NULLIF(quantity, 0). Exit ARR = SUM(arr) of the quarter snapshot (data_arr); quantity = SUM(product_l1_qty) at the quarter's last month (data_quantity). Aggregate each side separately, then JOIN on the key."
+    - "Level-matched quantity: L1 -> product_l1_qty. Never mix levels in one sum. No parent ARPU."
+
+ATTACH_RATE:
+  display_name: "Attach Rate"
+  description: >
+    Customer attach rate per product: customers owning the product (product_l1_qty > 0) as a share of all customers
+    (zs_users_qty > 0) in the same month (data_quantity). Product only.
+  table: data_quantity
+  value_column: product_l1_qty
+  aggregation: COUNT
+  variant: snapshot
+  agent_class: "agents.spec_agent.SpecAgent"
+  aliases: ["attach rate", "product attach", "penetration", "adoption rate"]
+  classifier_hint: "Attach rate = % of customers that own a product. Per product only (no account or parent cut)."
+  cuts: [product]
+  default_period: "last month of the latest complete quarter"
+  spec: {kind: quantity_month, tables: [data_quantity]}
+  keywords: [attach rate, attach, penetration, adoption rate, owners, customers owning]
+  id_columns: [product_l1]
+  snapshot_date_column: null
+  always_filters: {}
+  filter_columns: {product: product_l1}
+  checks:
+    - "zs_users_qty => The denominator is customers with zs_users_qty > 0 in the same month."
+    - "group by[^;]*product_l\\d => Attach rate is per product: GROUP BY product_l1 (or the product level asked). A single blended number across products can exceed 100%."
+  sql_rules:
+    - "owners = COUNT(DISTINCT account_id) FILTER (WHERE product_l1_qty > 0); all customers = COUNT(DISTINCT account_id) WHERE zs_users_qty > 0 for the SAME month; attach % = 100 * owners / NULLIF(all_customers, 0)."
+    - "A product filter narrows the numerator only; the denominator stays all customers."
+
+UNDEPLOYED_ARR:
+  display_name: "Undeployed ARR"
+  description: >
+    ARR of products that are undeployed (t3_arr_detail, level L3): deployed_status in
+    ('undeployed','not deployed','limited entitled'). Product only.
+  table: t3_arr_detail
+  value_column: arr
+  aggregation: SUM
+  variant: snapshot
+  agent_class: "agents.spec_agent.SpecAgent"
+  aliases: ["undeployed ARR", "not deployed ARR", "shelfware", "unused ARR"]
+  classifier_hint: "ARR not yet deployed. Per product only. The table stores one row set per product level, so level must be filtered (L3 by default)."
+  cuts: [product]
+  default_period: "latest complete quarter"
+  spec: {kind: snapshot_quarter, tables: [t3_arr_detail]}
+  keywords: [undeployed, not deployed, deployment, shelfware, unconfigured, limited entitled]
+  id_columns: [product]
+  snapshot_date_column: null
+  always_filters: {}
+  filter_columns: {product: product, geo: geo}
+  checks:
+    - "level\\s*=\\s*'L => t3_arr_detail must be filtered by level (L3 by default)."
+    - "deployed_status => Undeployed ARR filters deployed_status (undeployed, not deployed, limited entitled)."
+  sql_rules:
+    - "Undeployed ARR = SUM(arr) WHERE level = 'L3' AND configuration_status IS NOT NULL AND deployed_status IS NOT NULL AND lower(trim(deployed_status)) IN ('undeployed','not deployed','limited entitled')."
+    - "Product only; geo / area / region / market_segment exist. `level` says which hierarchy level `product` is at."
 
 CHURN_REASON:
-  display_name: "Churn Reason Analysis"
+  display_name: "Churn Reasons"
   description: >
-    Breakdown of churned ARR by the reason for churn. Enables root-cause analysis
-    of customer attrition (e.g., price sensitivity, competitive loss, product gap).
+    Why accounts lost ARR in a quarter (data_churn_reason): churn category, reason, competitor and the ARR change.
   table: data_churn_reason
-  value_column: churn_amount
+  value_column: account_arr_change
   aggregation: SUM
-  variant: downsell
-  agent_class: "agents.churn_reason_agent.ChurnReasonAgent"
-  keywords:
-    - churn reason
-    - why churn
-    - reason for churn
-    - churn cause
-    - churn analysis
-    - lost reason
-    - attrition reason
-    - competitive loss
-    - price churn
-  id_columns:
-    - account_id
-    - account_name
-    - churn_reason
+  variant: delta
+  agent_class: "agents.spec_agent.SpecAgent"
+  aliases: ["churn reasons", "why did customers churn", "churn drivers", "lost to competitor"]
+  classifier_hint: "The WHY behind churn: reasons, categories, competitors. For the churn amount use CHURN."
+  cuts: [product, account, parent]
+  default_period: "latest complete quarter"
+  spec: {kind: flow, tables: [data_churn_reason]}
+  keywords: [churn reason, churn reasons, why churn, churn driver, competitor, lost to, churn category]
+  id_columns: [account_id, account_name]
   snapshot_date_column: null
   always_filters: {}
-  filter_columns:
-    geo: cfy_geo
-    geography: cfy_geo
-    region: cfy_geo
-    churn_reason: churn_reason
-    reason: churn_reason
-    product: product_l1
-    product_l1: product_l1
-    fiscal_quarter: fiscal_quarter
-    quarter: fiscal_quarter
-    account: account_name
-    account_name: account_name
+  filter_columns: {geo: geo}
   sql_rules:
-    - "GROUP BY churn_reason to get per-reason breakdown."
-    - "SUM(churn_amount) — values may be negative (lost ARR); use ABS() for reporting."
-    - "ORDER BY ABS(SUM(churn_amount)) DESC to surface largest churn reasons first."
-    - "Use cfy_geo for geographic filtering."
-    - "account_id + account_name + churn_reason form the natural key for this table."
+    - "Losses: account_arr_change < 0. Group by churn_category / churn_reason / primary_competitor for causes."
+    - "Has account_id/name, parent id/name and geo / area / region."

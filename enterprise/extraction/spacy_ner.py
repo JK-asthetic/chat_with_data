@@ -59,19 +59,23 @@ _SINGULAR_RE = re.compile(
 )
 
 
-def _bootstrap_known_names(limit: int = 5000) -> list[str]:
-    """Bootstrap known accounts from DB or CSV for open-set matching."""
-    try:
-        from core.db import query_all
-        rows = query_all("SELECT DISTINCT account_name FROM dim_account WHERE account_name IS NOT NULL LIMIT 5000")
-        return [r["account_name"] for r in rows if r.get("account_name")]
-    except Exception:
-        return []
+def _bootstrap_known_names() -> list[str]:
+    """Known company names (end_user_name, then parent names) for open-set matching."""
+    from extraction.tools.company_tool import all_company_names
+    return all_company_names()
 
 
 @lru_cache(maxsize=1)
 def _get_extractor() -> Extractor:
     """Build the Extractor once and cache."""
+    from ner_spacy.extractor import accounts
+    from core.mdl_registry import get_registry
+    vocab: set[str] = set()
+    for m in get_registry().values():
+        for phrase in [*m.keywords, *m.aliases, m.display_name]:
+            vocab.update(re.findall(r"[a-z]+", phrase.lower()))
+    vocab -= {"zscaler", "the", "and", "for", "per", "net", "new"}
+    accounts.set_vocabulary(vocab | {"stage", "stages", "deals", "deal", "pipeline", "deployment", "coverage"})
     return Extractor(known_companies=_bootstrap_known_names())
 
 
@@ -167,6 +171,12 @@ def extract(query: str) -> ExtractedQuery:
 
     raw_orders = d.get("order_type_raw", [])
     order_type_raw_val = raw_orders[0] if raw_orders else None
+
+    if order_type_raw_val and re.search(
+        rf"\b{re.escape(str(order_type_raw_val))}s?\s+(?:targets?|opportunit\w+|potential|motions?|plays?|candidates?|prospects?|pipeline)\b",
+        query, re.IGNORECASE,
+    ):
+        order_type_raw_val = None
 
     sku_raw_val = sku_canonicals[0] if sku_canonicals else None
     geo_detail_raw_val = cfy_phrases[0] if cfy_phrases else None

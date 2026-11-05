@@ -79,8 +79,7 @@ class Extractor:
         embedded seed catalog when the DB is unreachable."""
         self._nlp = _load_nlp(model)
         self._catalog = catalog.load(prefer_db=use_db_product_catalog)
-        deep = set(_matchable_hierarchy_names())     # level 4-5 names, so 'Advanced Sandbox' beats 'Sandbox'
-        self._matchers = ClosedSetMatchers(self._nlp, extra_product_names=self._catalog.all_names() | deep)
+        self._matchers = ClosedSetMatchers(self._nlp, extra_product_names=self._catalog.all_names())
         tables = self._matchers.alias_tables
         self._fuzzy_closed = FuzzyClosedSetMatcher(
             geo=tables["GEO"], product=tables["PRODUCT"], segment=tables["SEGMENT"])

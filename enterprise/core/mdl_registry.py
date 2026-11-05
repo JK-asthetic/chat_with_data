@@ -34,6 +34,12 @@ class MetricDefinition:
     always_filters: dict[str, Any] = field(default_factory=dict)
     filter_columns: dict[str, str] = field(default_factory=dict)
     sql_rules: list[str] = field(default_factory=list)
+    aliases: list[str] = field(default_factory=list)
+    classifier_hint: str = ""
+    cuts: list[str] = field(default_factory=list)
+    default_period: str = ""
+    spec: dict[str, Any] = field(default_factory=dict)
+    checks: list[tuple[str, str]] = field(default_factory=list)      # (regex, message)
     table_def: Optional[TableDef] = field(default=None, repr=False)
 
     def schema_ddl(self, include_tiers: tuple[int, ...] = (1, 2)) -> str:
@@ -73,6 +79,12 @@ def load_metrics() -> dict[str, MetricDefinition]:
             always_filters=m.get("always_filters", {}),
             filter_columns=m.get("filter_columns", {}),
             sql_rules=m.get("sql_rules", []),
+            aliases=m.get("aliases", []),
+            classifier_hint=(m.get("classifier_hint") or "").strip(),
+            cuts=m.get("cuts", []),
+            default_period=(m.get("default_period") or "").strip(),
+            spec=m.get("spec", {}) or {},
+            checks=[tuple(c.split(" => ", 1)) for c in m.get("checks", []) if " => " in c],
             table_def=table_def,
         )
         registry[metric_name] = defn

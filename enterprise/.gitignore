@@ -1,0 +1,10 @@
+.venv
+.env
+
+
+agents/__pycache__
+core/__pycache__
+extraction/__pycache__
+pipeline/__pycache__
+response/__pycache__
+results

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 import logging
+import re
 
 from core.settings import get_ai, get_db
 from core.mdl_registry import get_registry, MetricDefinition
@@ -28,8 +29,29 @@ from sql.executor import execute as execute_sql
 from response.sanity import sanity_check
 from response.insight import generate_insight
 from core.log import step, ok, warn, sql_block
+from sql.builder import _sql_literal, _where_parts
 
 logger = logging.getLogger(__name__)
+
+_BY = r"\b(?:by|per|each|every|across|for\s+(?:all|each|every)|split\s+by|broken\s+down\s+by|breakdown\s+by|grouped\s+by|wise)\s+(?:the\s+|all\s+|its\s+)?"
+_CUT_PATTERNS = [
+    ("parent",  re.compile(_BY + r"parent|\bparent[- ](?:wise|level|compan)|\btop\s+(?:\d+\s+)?parents?\b", re.I)),
+    ("product", re.compile(_BY + r"(?:products?|product\s+(?:lines?|families?)|l[1-5](?:\s+products?)?|level\s*[1-5])\b|\bproduct[- ]wise\b|\ball\s+(?:l[1-5]\s+)?products\b", re.I)),
+    ("region",  re.compile(_BY + r"regions?\b|\bregion[- ]wise\b", re.I)),
+    ("area",    re.compile(_BY + r"(?:areas?|sub[- ]?geos?)\b|\barea[- ]wise\b", re.I)),
+    ("geo",     re.compile(_BY + r"(?:geos?|geograph\w*|theat(?:er|re)s?)\b|\bgeo[- ]wise\b", re.I)),
+    ("segment", re.compile(_BY + r"(?:segments?|market\s+segments?)\b|\bsegment[- ]wise\b", re.I)),
+    ("account", re.compile(_BY + r"(?:accounts?|customers?|companies|logos?|end[- ]users?)\b"
+                           r"|\b(?:top|bottom|largest|biggest|highest|lowest|which)\s+(?:\d+\s+)?(?:accounts?|customers?|companies|logos?)\b", re.I)),
+]
+
+
+def requested_cut(question: str, intent: Intent | None = None) -> str:
+    """The breakdown the question asks for: product | geo | area | region | segment | parent | account | total."""
+    for name, pat in _CUT_PATTERNS:
+        if pat.search(question or ""):
+            return name
+    return "account" if intent == Intent.RANK else "total"
 
 
 class MetricAgent(ABC):
@@ -57,6 +79,77 @@ class MetricAgent(ABC):
         """Construct the SQLContext tailored to this metric's table and logic."""
         ...
 
+    @staticmethod
+    def _product_where(resolved, prefix: str = "", max_level: int = 5) -> dict:
+        """WHERE entries for every resolved product (OR semantics across products), at any level."""
+        filters = resolved.product_filters or ([resolved.product_filter] if resolved.product_filter else [])
+        if not filters:
+            return {}
+
+        def col(n: int) -> str:
+            return f"{prefix}product_l{n}"
+
+        paths = list(dict.fromkeys(tuple(f.path[:max_level]) for f in filters if f.path))
+        if not paths:
+            return {}
+        if all(len(p) == 1 for p in paths):
+            vals = [p[0] for p in paths]
+            return {col(1): vals[0]} if len(vals) == 1 else {f"{col(1)}__in": vals}
+        if len(paths) == 1:
+            return {col(i): v for i, v in enumerate(paths[0], 1)}
+
+        clauses = [
+            "(" + " AND ".join(f"{col(i)} = {_sql_literal(v)}" for i, v in enumerate(p, 1)) + ")"
+            for p in paths
+        ]
+        return {"__raw_product__": "(" + " OR ".join(clauses) + ")"}
+
+    @staticmethod
+    def _company_where(af) -> dict:
+        """Company filter on data_arr: end user (end_user_id) or, when matched by parent name, the parent."""
+        if not af or not (af.account_id or af.account_name):
+            return {}
+        if af.multiple:
+            ids, levels = af.account_ids, (af.account_levels or ["end_user"] * len(af.account_ids))
+        else:
+            ids, levels = ([af.account_id], [af.level]) if af.account_id else ([], [])
+        end_users = [i for i, l in zip(ids, levels) if l != "parent"]
+        parents = [i for i, l in zip(ids, levels) if l == "parent"]
+
+        def one_or_in(col: str, vals: list) -> dict:
+            return {col: vals[0]} if len(vals) == 1 else {f"{col}__in": vals}
+
+        if end_users and not parents:
+            return one_or_in("end_user_id", end_users)
+        if parents and not end_users:
+            return one_or_in("end_user_parent_id", parents)
+        if end_users and parents:
+            eu = ", ".join(_sql_literal(i) for i in end_users)
+            pa = ", ".join(_sql_literal(i) for i in parents)
+            return {"__raw_company__": f"(end_user_id IN ({eu}) OR end_user_parent_id IN ({pa}))"}
+        return {"end_user_name": af.account_name}
+
+    @classmethod
+    def _company_account_filter(cls, af) -> dict:
+        """The same company as a filter on tables keyed by account_id only (e.g. data_quantity)."""
+        cond = cls._company_where(af)
+        if not cond:
+            return {}
+        if "end_user_name" in cond:
+            return {"__raw_company__": f"account_id IN (SELECT DISTINCT account_id FROM data_arr WHERE end_user_name = {_sql_literal(cond['end_user_name'])})"}
+        inner = " AND ".join(_where_parts(cond))
+        return {"__raw_company__": f"account_id IN (SELECT DISTINCT account_id FROM data_arr WHERE {inner})"}
+
+    @staticmethod
+    def _multi_product_group(resolved, prefix: str = "") -> list[str]:
+        """Product GROUP BY: an explicit 'all L<n> products' breakdown, else several products with no account pinned."""
+        if resolved.product_level:
+            return [f"{prefix}product_l{resolved.product_level}"]
+        filters = resolved.product_filters
+        if len(filters) < 2 or (resolved.account_filter and resolved.account_filter.account_id):
+            return []
+        return [f"{prefix}product_l{max(f.deepest_level for f in filters) or 1}"]
+
     def _auto_chart(self, result: QueryResult, ctx: SQLContext) -> ChartType:
         """Determines best visual presentation based on columns and intent."""
         cols = [c.lower() for c in result.columns]
@@ -72,6 +165,17 @@ class MetricAgent(ABC):
         """Orchestrates end-to-end execution for this metric."""
         step(f"Agent [{self.metric_name}]", "building SQL context…")
         ctx = self.build_context(request)
+        if ctx.blocked_reason:
+            warn(f"Agent [{self.metric_name}] not available", ctx.blocked_reason)
+            return MetricAgentResponse(
+                metric_name=self.metric_name,
+                display_name=self.metric_def.display_name,
+                sql=GeneratedSQL(sql="-- not available", source="error", attempts=0, validation_errors=[ctx.blocked_reason]),
+                result=QueryResult(sql="", rows=[], columns=[], row_count=0, elapsed_ms=0.0, db_error=None, success=True),
+                insight=ctx.blocked_reason,
+                sanity_warnings=[],
+                chart_type="table",
+            )
 
         step(f"Agent [{self.metric_name}]", "generating SQL…")
         gen = await generate_sql(ctx, self.metric_def)
@@ -100,7 +204,7 @@ class MetricAgent(ABC):
 
         warnings = sanity_check(result, ctx)
         if warnings:
-            warn(f"Agent [{self.metric_name}] sanity", "  ".join(warnings))
+            warn(f"Agent [{self.metric_name}] sanity", "  ".join(f"{w.code}: {w.message}" for w in warnings))
 
         step(f"Agent [{self.metric_name}]", "generating insight…")
         insight_text = await generate_insight(result, request.question) if result.success else ""

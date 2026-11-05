@@ -100,6 +100,20 @@ class ProductFilter(BaseModel):
         return cls(**levels, deepest_level=deepest)
 
     @property
+    def display(self) -> str:
+        """Path without the parent-padding repeats, e.g. 'ZIA > SWG > Core SWG'."""
+        out: list[str] = []
+        for p in self.path:
+            if not out or out[-1] != p:
+                out.append(p)
+        return " > ".join(out)
+
+    @property
+    def level_label(self) -> str:
+        """Deepest populated level as 'L1'..'L5' ('-' when empty)."""
+        return f"L{self.deepest_level}" if self.deepest_level else "-"
+
+    @property
     def path(self) -> tuple[str, ...]:
         """Return the populated hierarchy as a left-to-right tuple."""
         return tuple(
@@ -115,6 +129,10 @@ class AccountFilter(BaseModel):
     account_raw: Optional[str]   = Field(None, description="Original text that triggered account lookup.")
     account_id: Optional[str]    = Field(None, description="Primary resolved account ID.")
     account_name: Optional[str]  = Field(None, description="Primary resolved account display name.")
+    level: str                   = Field("end_user", description="'end_user' (account_id = end_user_id) or 'parent' (account_id = end_user_parent_id).")
+    account_levels: list[str]    = Field(default_factory=list, description="Level of each entry in account_ids (multi-company).")
+    parent_id: Optional[str]     = Field(None, description="Primary account's end_user_parent_id.")
+    parent_name: Optional[str]   = Field(None, description="Primary account's end_user_parent_name.")
 
     # Multi-account variants
     multiple: list[str]    = Field(default_factory=list, description="Raw names when multiple accounts mentioned.")
@@ -135,6 +153,8 @@ class Fiscal(BaseModel):
         default_factory=list,
         description="Ordered list of quarter labels for range queries.",
     )
+
+    month_start: Optional[str] = Field(None, description="ISO first day of a month the user named ('October 2026' -> '2026-10-01').")
 
     # Comparison anchor (DELTA / COMPARE)
     compare_to: Optional["Fiscal"] = Field(None, description="Second period for delta/compare intent.")
@@ -163,6 +183,12 @@ class GeoFilter(BaseModel):
 
     col: str   = Field(..., description="Column name in the fact table (e.g. 'region', 'country').")
     value: str = Field(..., description="Normalised value to filter on.")
+    values: list[str] = Field(default_factory=list, description="All values when a broad geo expands (e.g. Americas -> AMS ECE + AMS MPH).")
+
+    @property
+    def level(self) -> str:
+        """CFY hierarchy level for this column: geo | area | region."""
+        return self.col.replace("cfy_", "", 1)
 
 
 class CompanyMatch(BaseModel):
@@ -170,6 +196,9 @@ class CompanyMatch(BaseModel):
 
     account_id: str              = Field(..., description="ID in the accounts master table.")
     account_name: str            = Field(..., description="Display name of the matched account.")
+    level: str                   = Field("end_user", description="'end_user' or 'parent' — which name matched.")
+    parent_id: Optional[str]     = Field(None, description="end_user_parent_id from data_arr.")
+    parent_name: Optional[str]   = Field(None, description="end_user_parent_name from data_arr.")
     score: float                 = Field(..., description="Fuzzy-match confidence score (0–1).")
     matched_raw: Optional[str]   = Field(None, description="The raw string that generated this match.")
 
@@ -186,6 +215,8 @@ class ResolvedEntities(BaseModel):
 
     # ---- Product resolution ------------------------------------------------
     product_filter: Optional[ProductFilter]           = None
+    product_filters: list[ProductFilter]              = Field(default_factory=list)
+    product_level: Optional[int]                      = Field(None, description="Breakdown level asked for ('all L1 products' -> 1); a GROUP BY, not a filter.")
     product_ambiguous: bool                           = False
     product_candidates: list[ProductFilter]           = Field(default_factory=list)
     product_hierarchy_candidates: list[ProductFilter] = Field(default_factory=list)
@@ -236,6 +267,13 @@ class SubQuery(BaseModel):
     id: str = Field("q1", description="Stable identifier within the containing ClassifiedQuery.")
 
 
+class ClarifyQuestion(BaseModel):
+    """A question the user must answer before the SQL can be right."""
+
+    question: str
+    options: list[str] = Field(default_factory=list, description="Short answer choices, each usable as a phrase appended to the question.")
+
+
 class ClassifiedQuery(BaseModel):
     """Full classification output from the LLM brain (Haiku call).
 
@@ -257,6 +295,11 @@ class ClassifiedQuery(BaseModel):
     resolved_question: Optional[str] = Field(
         None,
         description="Standalone rewrite of the question (populated when is_followup=True).",
+    )
+
+    clarifications: list[ClarifyQuestion] = Field(
+        default_factory=list,
+        description="Genuine blocking ambiguities to ask the user (answers update the query).",
     )
 
     # Strategic bypass flag
@@ -321,6 +364,15 @@ class SQLContext(BaseModel):
         description="Parameterised WHERE values keyed by column name.",
     )
     group_by: list[str]      = Field(default_factory=list, description="Columns for GROUP BY.")
+    select_extra: list[str]  = Field(default_factory=list, description="Extra SELECT expressions that are not grouped (e.g. 'MAX(end_user_name) AS account_name').")
+    extra_where: dict[str, dict[str, Any]] = Field(
+        default_factory=dict,
+        description="Pre-resolved WHERE values for the other tables of a multi-table metric (table -> where).",
+    )
+    reference_sql: str       = Field("", description="Standard queries (correct definitions) rendered with this question's filters.")
+    fallback_sql: str        = Field("", description="Deterministic standard query used if the LLM cannot produce valid SQL.")
+    notes: list[str]         = Field(default_factory=list, description="Period/cut mappings to show the user.")
+    blocked_reason: str      = Field("", description="Set when the requested cut does not exist for this metric.")
     order_by: str            = Field("", description="ORDER BY fragment.")
     limit: int               = Field(10, description="LIMIT value.")
     rules: str               = Field("", description="Domain rules injected into the SQL prompt.")
@@ -330,7 +382,7 @@ class GeneratedSQL(BaseModel):
     """Output of the SQL generator step."""
 
     sql: str = Field(..., description="The generated SQL string.")
-    source: Literal["llm", "fallback", "error"] = Field(
+    source: Literal["standard", "llm", "fallback", "cache", "error"] = Field(
         "llm",
         description="How the SQL was produced.",
     )

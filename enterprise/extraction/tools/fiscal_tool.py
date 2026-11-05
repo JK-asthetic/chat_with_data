@@ -15,6 +15,7 @@ from typing import Optional
 
 from pipeline.models import Fiscal, Intent
 from core.db import query_one
+from core import fiscal_calendar as cal
 
 _Q_FIRST_RE = re.compile(r"Q([1-4])\s*(?:FY\s*|fiscal\s*)?(\d{2,4})", re.IGNORECASE)
 _FY_RE = re.compile(r"(?:FY\s*|fiscal\s+year\s*)?(\d{2,4})(?:[\s\-\/]?Q([1-4]))?", re.IGNORECASE)
@@ -129,6 +130,13 @@ async def resolve_fiscal(
         fiscal.fiscal_year_label = fy_label
     if fq_label:
         fiscal.fiscal_quarter_label = fq_label
+
+    month = cal.find_month(raw_query or fiscal_raw or "")
+    if month and not fiscal.quarter_labels:
+        fy, q = cal.quarter_of(month)
+        fiscal.month_start = month.isoformat()
+        fiscal.fy, fiscal.quarter = fy, q
+        fiscal.fiscal_quarter_label, fiscal.fiscal_year_label = cal.label((fy, q)), f"FY {fy}"
 
     if not fiscal.fiscal_year_label and not fiscal.fiscal_quarter_label and not fiscal.quarter_labels:
         return fiscal, True, None

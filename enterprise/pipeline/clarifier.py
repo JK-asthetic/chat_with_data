@@ -49,6 +49,9 @@ COMPANY_SCORE_THRESHOLD: float = 0.75
 MAX_CHOICES: int = 3
 """Maximum number of candidate options to show the user in a pick-list."""
 
+PRODUCT_CHOICES: int = 6
+"""Product paths can be many (same name in several branches) — show more of them."""
+
 _VALID_GEOS: list[str] = [
     "AMER", "EMEA", "APJ", "LATAM",
     "North America", "Europe", "Asia Pacific",
@@ -84,6 +87,7 @@ class ClarificationResult:
     pinned_companies: list[CompanyMatch]         = field(default_factory=list)
     pinned_fiscal: Optional[Fiscal]              = None
     pinned_products: Optional[list[ProductFilter]] = None
+    answers: list[tuple[str, str]]               = field(default_factory=list)
     not_answerable_reason: str                   = ""
 
 
@@ -180,7 +184,8 @@ def _handle_c1_company(
     _print_card_header("Multiple accounts match your query")
     _print_line("Please choose the account you meant:\n")
     for i, m in enumerate(matches, start=1):
-        _print_choice(i, m.account_name, f"score={m.score:.0%}")
+        kind = "parent company" if m.level == "parent" else f"end user, parent={m.parent_name or '-'}"
+        _print_choice(i, m.account_name, f"{kind}, id={m.account_id}, score={m.score:.0%}")
     _print_choice(len(matches) + 1, "None of these — skip")
 
     raw_input = _ask(f"Enter 1–{len(matches) + 1} [default=1]:", default="1")
@@ -216,15 +221,14 @@ def _handle_c2_product(
     Returns:
         :class:`ClarificationResult` with pinned_products set.
     """
-    candidates = resolved.product_hierarchy_candidates[:MAX_CHOICES]
+    candidates = resolved.product_hierarchy_candidates[:PRODUCT_CHOICES]
     if not candidates:
         return ClarificationResult(answerable=True)  # nothing to clarify
 
     _print_card_header("Multiple product categories match")
     _print_line("Which product scope did you mean?\n")
     for i, pf in enumerate(candidates, start=1):
-        path_str = " › ".join(pf.path) if pf.path else "(all products)"
-        _print_choice(i, path_str)
+        _print_choice(i, f"{pf.display.replace(' > ', ' › ')}", pf.level_label)
     _print_choice(len(candidates) + 1, "All of them (combined)")
 
     raw_input = _ask(f"Enter 1–{len(candidates) + 1} [default={len(candidates) + 1}]:",
@@ -277,36 +281,8 @@ def _handle_c3_fiscal(
             ),
         )
 
-    # Lightweight inline parse — full fiscal resolver is in extraction stage
-    # Here we just build a minimal Fiscal to unblock the pipeline
-    fy: int | None = None
-    quarter: int | None = None
-
-    fy_match = __import__("re").search(r"FY\s*(\d{2,4})", raw_input, __import__("re").I)
-    if fy_match:
-        raw_yr = int(fy_match.group(1))
-        fy = 2000 + raw_yr if raw_yr < 100 else raw_yr
-
-    q_match = __import__("re").search(r"Q([1-4])", raw_input, __import__("re").I)
-    if q_match:
-        quarter = int(q_match.group(1))
-
-    if fy is None:
-        return ClarificationResult(
-            answerable=False,
-            not_answerable_reason=f"Could not parse fiscal year from '{raw_input}'.",
-        )
-
-    q_label = f"Q{quarter} " if quarter else ""
-    pinned = Fiscal(
-        fy=fy,
-        quarter=quarter,
-        is_range=False,
-        fiscal_quarter_label=f"{q_label}FY{str(fy)[2:]}" if quarter else None,
-        fiscal_year_label=f"FY{str(fy)[2:]}",
-    )
     logger.info("C3: user entered fiscal '%s'", raw_input)
-    return ClarificationResult(answerable=True, pinned_fiscal=pinned)
+    return ClarificationResult(answerable=True, addendum=f" for {raw_input}")
 
 
 def _handle_c4_geo(
@@ -364,6 +340,21 @@ def _handle_c4_geo(
             return ClarificationResult(answerable=True, addendum=" (no geography filter)")
 
 
+def _handle_llm_question(q) -> str:
+    """Ask one classifier-raised question; returns the answer text ('' = skipped)."""
+    _print_card_header("A quick question")
+    _print_line(f"{q.question}\n")
+    for i, opt in enumerate(q.options, start=1):
+        _print_choice(i, opt)
+    hint = f"Enter 1–{len(q.options)} or type your own answer" if q.options else "Type your answer"
+    raw = _ask(f"{hint} [Enter = skip]:", default="")
+    if not raw:
+        return ""
+    if raw.isdigit() and 1 <= int(raw) <= len(q.options):
+        return q.options[int(raw) - 1]
+    return raw
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -372,10 +363,9 @@ def clarify(
     resolved: ResolvedEntities,
     classified: ClassifiedQuery,
 ) -> ClarificationResult:
-    """Run at most one clarification card to resolve blocking ambiguities.
+    """Ask the user about every blocking ambiguity (known triggers, then the classifier's questions).
 
-    Checks triggers in priority order and presents at most one interactive
-    card to the user.  When running non-interactively (stdin not a TTY or
+    Known triggers are walked in priority order, one card each.  When running non-interactively (stdin not a TTY or
     an EOFError is raised), highest-confidence defaults are used silently.
 
     Args:
@@ -413,7 +403,7 @@ def clarify(
         elif a == "product_hierarchy" and "C2" not in triggers:
             triggers.append("C2")
 
-    if not triggers:
+    if not triggers and not classified.clarifications:
         logger.debug("Clarifier: no triggers — proceeding directly.")
         return ClarificationResult(answerable=True)
 
@@ -437,27 +427,39 @@ def clarify(
         # C3 / C4 non-interactive: proceed without fiscal / geo (may yield empty results)
         return result
 
-    # Interactive: show at most one card (highest priority)
-    # We pick the first trigger and handle it
-    active = triggers[0]
-    logger.debug("Clarifier: showing card for trigger %s", active)
+    # Interactive: walk every card in priority order, then the classifier's own questions
+    merged = ClarificationResult(answerable=True)
+    for active in triggers:
+        logger.debug("Clarifier: showing card for trigger %s", active)
+        try:
+            if active == "C1":
+                r = _handle_c1_company(resolved)
+            elif active == "C2":
+                r = _handle_c2_product(resolved)
+            elif active == "C3":
+                r = _handle_c3_fiscal(resolved)
+            elif active == "C4":
+                r = _handle_c4_geo(resolved)
+            else:
+                continue
+        except (EOFError, KeyboardInterrupt):
+            logger.info("Clarifier: interrupted by user, applying defaults.")
+            r = _default_result(active, resolved)
+        if not r.answerable or r.cancelled:
+            return r
+        merged.pinned_company = merged.pinned_company or r.pinned_company
+        if r.pinned_products is not None:
+            merged.pinned_products = r.pinned_products
+        merged.addendum += r.addendum
 
-    try:
-        if active == "C1":
-            return _handle_c1_company(resolved)
-        elif active == "C2":
-            return _handle_c2_product(resolved)
-        elif active == "C3":
-            return _handle_c3_fiscal(resolved)
-        elif active == "C4":
-            return _handle_c4_geo(resolved)
-        else:
-            return ClarificationResult(answerable=True)
-
-    except (EOFError, KeyboardInterrupt):
-        # User interrupted — apply defaults
-        logger.info("Clarifier: interrupted by user, applying defaults.")
-        return _default_result(active, resolved)
+    for q in classified.clarifications:
+        try:
+            ans = _handle_llm_question(q)
+        except (EOFError, KeyboardInterrupt):
+            break
+        if ans:
+            merged.answers.append((q.question, ans))
+    return merged
 
 
 def _default_result(trigger: str, resolved: ResolvedEntities) -> ClarificationResult:

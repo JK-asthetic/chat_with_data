@@ -26,16 +26,17 @@ from pipeline.models import (
 from pipeline.memory import SessionMemory, Turn
 from pipeline.classifier import classify
 from pipeline.clarifier import clarify
-from extraction.orchestrator import resolve, resolve_async
+from extraction.orchestrator import resolve, resolve_async, log_resolved
 from core.mdl_registry import get_registry
 from core.settings import get_ai
-from core.log import step, ok, warn
+from core.log import step, ok, warn, entity
 from response.insight import _stream
 
 logger = logging.getLogger(__name__)
 
 # Dynamically loaded Agent class registry
 _AGENT_REGISTRY: dict[str, type] = {}
+_LOOP: Optional[asyncio.AbstractEventLoop] = None
 
 
 def _load_agent_class(dot_path: str) -> type:
@@ -108,35 +109,14 @@ async def run_async(
     # Stage 1: Deterministic extraction
     step("Stage 1 · Extraction", "running spaCy NER + 7 tools in parallel…")
     resolved = await resolve_async(query)
-    ext = resolved.extracted
-
-    entity_parts = []
-    try:
-        if resolved.account_filter and resolved.account_filter.account_name:
-            entity_parts.append(f"account={resolved.account_filter.account_name}")
-        if resolved.fiscal and (getattr(resolved.fiscal, "fiscal_quarter_label", None) or getattr(resolved.fiscal, "fiscal_year_label", None)):
-            fiscal_label = getattr(resolved.fiscal, "fiscal_quarter_label", None) or getattr(resolved.fiscal, "fiscal_year_label", "")
-            if fiscal_label:
-                entity_parts.append(f"fiscal={fiscal_label}")
-        if resolved.geo_filter and resolved.geo_filter.value:
-            entity_parts.append(f"geo={resolved.geo_filter.value}")
-        if resolved.product_filter and resolved.product_filter.path:
-            entity_parts.append(f"product={resolved.product_filter.path}")
-        if resolved.segment_filter:
-            entity_parts.append(f"segment={resolved.segment_filter}")
-    except Exception as e:
-        logger.debug(f"Error building entity parts: {e}")
-
-    ok("Extraction done", "; ".join(entity_parts) if entity_parts else "no entities resolved")
+    ok("Extraction done")
+    log_resolved(resolved)
     if resolved.ambiguities:
         warn("Ambiguities", "; ".join(resolved.ambiguities))
 
     # Stage 2: LLM pre-classify (metric routing + intent + follow-up)
     step("Stage 2 · Classification", f"routing query via LLM ({get_ai().models.classifier})…")
     classified: ClassifiedQuery = classify(query, resolved, mem)
-    ok("Classification done",
-       f"metrics={classified.metrics_needed}  intent={classified.intent}  "
-       f"followup={classified.is_followup}  strategic={classified.is_strategic}")
 
     # Strategic question bypass
     if classified.is_strategic:
@@ -153,27 +133,53 @@ async def run_async(
             total_elapsed_ms=round((time.perf_counter() - t0) * 1000.0, 2),
         )
 
-    # Stage 3: Clarification check if ambiguities exist
-    if (resolved.ambiguities or classified.ambiguities) and interactive:
-        step("Stage 3 · Clarification", f"ambiguities: {resolved.ambiguities or classified.ambiguities}")
-        clarification_res = clarify(resolved, classified)
-        if not clarification_res.answerable or clarification_res.cancelled:
+    # Stage 3: Clarification — ask the user, then fold every answer back into the query
+    effective_query = query
+    pending = resolved.ambiguities or classified.ambiguities or classified.clarifications
+    if pending and not interactive and classified.clarifications:
+        warn("Stage 3 · Clarification skipped (non-interactive)",
+             " | ".join(c.question for c in classified.clarifications))
+    if pending and interactive:
+        step("Stage 3 · Clarification", f"needs input: {resolved.ambiguities or classified.ambiguities or [c.question for c in classified.clarifications]}")
+        res = clarify(resolved, classified)
+        if not res.answerable or res.cancelled:
             return PipelineResponse(
                 question=query,
                 agent_responses=[],
-                merged_insight=clarification_res.not_answerable_reason or "Clarification cancelled.",
+                merged_insight=res.not_answerable_reason or "Clarification cancelled.",
                 total_elapsed_ms=round((time.perf_counter() - t0) * 1000.0, 2),
             )
-        if clarification_res.pinned_company and resolved.account_filter:
-            resolved.account_filter.account_name = clarification_res.pinned_company.account_name
-            resolved.account_filter.account_id = clarification_res.pinned_company.account_id
+
+        extra = " ".join([res.addendum.strip()] + [a for _, a in res.answers if a]).strip()
+        if extra:
+            effective_query = f"{query} ({extra})"
+            step("Stage 3 · Updated question", effective_query)
+            resolved = await resolve_async(effective_query)
+            log_resolved(resolved)
+            classified = classify(effective_query, resolved, mem)
+
+        # Explicit picks always win over whatever re-extraction guessed
+        pc = res.pinned_company
+        if pc and resolved.account_filter:
+            af = resolved.account_filter
+            af.account_name, af.account_id, af.level = pc.account_name, pc.account_id, pc.level
+            af.parent_id, af.parent_name = pc.parent_id, pc.parent_name
+            af.multiple, af.account_ids = [], []
+            resolved.company_ambiguous = False
+        if res.pinned_products is not None:
+            resolved.product_filters = list(res.pinned_products)
+            resolved.product_filter = resolved.product_filters[0] if resolved.product_filters else None
+            resolved.product_ambiguous = False
+            resolved.product_hierarchy_candidates = []
+            for p in resolved.product_filters:
+                entity("product", f"{p.display}  (level: {p.level_label})  [your choice]")
 
     # Stage 4: Parallel agent execution
     step("Stage 4 · Agent execution", f"launching {len(classified.sub_queries or classified.metrics_needed)} agent(s) in parallel…")
     sub_queries = classified.sub_queries
     if not sub_queries:
         sub_queries = [
-            SubQuery(metric=m, question=classified.resolved_question or query, id=f"q{i+1}")
+            SubQuery(metric=m, question=classified.resolved_question or effective_query, id=f"q{i+1}")
             for i, m in enumerate(classified.metrics_needed)
         ]
 
@@ -217,5 +223,9 @@ def run(
         import nest_asyncio
         nest_asyncio.apply()
         return loop.run_until_complete(run_async(query, memory, interactive))
-    else:
-        return asyncio.run(run_async(query, memory, interactive))
+
+    # One persistent loop: the DB pool is bound to the loop that created it
+    global _LOOP
+    if _LOOP is None or _LOOP.is_closed():
+        _LOOP = asyncio.new_event_loop()
+    return _LOOP.run_until_complete(run_async(query, memory, interactive))

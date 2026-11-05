@@ -31,9 +31,9 @@ import requests
 
 from core.mdl_registry import get_registry
 from core.settings import get_ai
-from core.log import step, ok, warn
+from core.log import step, ok, warn, entity
 from pipeline.memory import SessionMemory
-from pipeline.models import ClassifiedQuery, Intent, ResolvedEntities, SubQuery
+from pipeline.models import ClarifyQuestion, ClassifiedQuery, Intent, ResolvedEntities, SubQuery
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +55,30 @@ _STRATEGIC_KW: tuple[str, ...] = (
     "playbook",
 )
 """Lowercase phrases that always classify a question as strategic without an LLM call."""
+
+
+_DATA_SIGNAL = re.compile(
+    r"\d+\s*%|\b(?:above|below|over|under|more than|less than|greater than|at least|at most)\b"
+    r"|\b(?:top|bottom)\s+\d+|\b\d+(?:\.\d+)?\s*[kmb]\b|\bqoq\b|\byoy\b|\bgrew\b|\bdeclin\w*\b",
+    re.IGNORECASE,
+)
+
+
+def _has_data_signal(query: str, resolved: ResolvedEntities) -> bool:
+    """True when the question carries filters/thresholds a SQL query can answer (so it is not 'strategic')."""
+    return bool(
+        resolved.fiscal and (resolved.fiscal.fiscal_quarter_label or resolved.fiscal.fiscal_year_label or resolved.fiscal.quarter_labels)
+        or resolved.product_filters or resolved.geo_filter or resolved.geo_detail_filter
+        or resolved.segment_filter or resolved.product_level
+        or (resolved.account_filter and resolved.account_filter.account_id)
+        or _DATA_SIGNAL.search(query)
+    )
+
+
+def _merge_tiles(metrics: list[str]) -> list[str]:
+    """Churn and Swap are one dashboard tile (one query returns both): never run it twice."""
+    metrics = list(dict.fromkeys(metrics))
+    return [m for m in metrics if not (m == "SWAP" and "CHURN" in metrics)]
 
 
 def _is_strategic_by_keyword(text: str) -> bool:
@@ -101,8 +125,12 @@ def build_classifier_prompt(
     metric_lines: list[str] = []
     for name, defn in registry.items():
         keywords: list[str] = getattr(defn, "keywords", []) or []
-        kw_str = ", ".join(keywords[:6]) if keywords else "—"
-        metric_lines.append(f"  - {name}: {kw_str}")
+        kw_str = ", ".join(dict.fromkeys([*getattr(defn, "aliases", []), *keywords][:8])) or "—"
+        cuts = ", ".join(getattr(defn, "cuts", []) or []) or "n/a"
+        metric_lines.append(
+            f"  - {name} ({defn.display_name}): {getattr(defn, 'classifier_hint', '') or defn.description[:140]} "
+            f"[cuts: {cuts}; default period: {getattr(defn, 'default_period', '') or 'latest complete quarter'}; words: {kw_str}]"
+        )
     metrics_catalogue = "\n".join(metric_lines) if metric_lines else "  - ARR: annual recurring revenue"
 
     # -- Resolved entities summary -----------------------------------------
@@ -119,8 +147,13 @@ def build_classifier_prompt(
         label = f.fiscal_quarter_label or f.fiscal_year_label or f"FY{f.fy}"
         entity_parts.append(f"fiscal={label!r}")
 
-    if resolved.product_filter:
-        entity_parts.append(f"product={resolved.product_filter.path}")
+    if resolved.product_filters:
+        entity_parts.append("products=" + "; ".join(f"{p.display} ({p.level_label})" for p in resolved.product_filters))
+
+    if resolved.product_level:
+        entity_parts.append(f"product_breakdown=product_l{resolved.product_level} (user asked for all L{resolved.product_level} products)")
+    if resolved.product_hierarchy_candidates:
+        entity_parts.append("product_candidates_unresolved=" + "; ".join(c.display for c in resolved.product_hierarchy_candidates))
 
     if resolved.geo_filter:
         entity_parts.append(f"geo={resolved.geo_filter.col}={resolved.geo_filter.value!r}")
@@ -130,6 +163,10 @@ def build_classifier_prompt(
 
     if ext.limit_n and ext.limit_n != 10:
         entity_parts.append(f"top_n={ext.limit_n}")
+
+    if re.search(r"\bzscaler\b(?!\s+(?:internet|private|digital|cloud|data|business))", query, re.IGNORECASE) \
+            and not (resolved.account_filter and resolved.account_filter.account_id):
+        entity_parts.append("scope=ALL data (the word 'Zscaler' is the vendor itself, NOT a customer: no company filter, nothing to clarify)")
 
     entity_summary = "; ".join(entity_parts) if entity_parts else "(none resolved)"
 
@@ -178,8 +215,24 @@ Analyze the question and output EXACTLY this JSON schema:
   "resolved_question": null,          // standalone rewrite if is_followup=true, else null
   "is_strategic": false,              // true for open-ended strategy / advisory questions
   "sub_queries": [],                  // list of {{metric, question, id}} for multi-metric questions
-  "ambiguities": []                   // NEW ambiguities you detect beyond the already-flagged ones
+  "clarifications": []                // [{{"question": "...", "options": ["...", "..."]}}] — see rules
 }}
+
+## ROUTING KNOWLEDGE (choose the metric by WHAT is measured)
+- ARR = a point-in-time stock at the last month of a quarter. "Exit ARR", "book of business", ARR trend, ARR by geo/product/account, ARR renewing in a quarter -> ARR.
+- ACV metrics are FLOWS per quarter: N/U ACV (new logo + new-to-product + upsell, with logos) -> NU_ACV; all bookings incl. renewals -> ACV;
+  NNACV = N/U ACV + churn(negative) + swap (it is NOT "ACV excluding renewals") -> NNACV.
+- Churn amount -> CHURN; swap -> SWAP (CHURN's query returns churn AND swap, so "churn and swap" is just CHURN); net quarterly ARR change -> INCR_ARR; WHY customers churned / competitors -> CHURN_REASON.
+- Plan / plan % / attainment / vs target -> NACV. Pipeline / open deals / lost deals / by stage -> OPEN_PIPELINE.
+- Churn risk / at-risk renewals / renewal risk -> RENEWAL_RISK (renewal ARR in the risk window). ARR that renews in a given quarter is ARR, not RENEWAL_RISK.
+- Seats / quantity / users -> QTY; ARPU -> ARPU; attach rate -> ATTACH_RATE; undeployed ARR -> UNDEPLOYED_ARR.
+- A question may need several metrics (e.g. "NNACV and churn by product"): list each in metrics_needed and split into sub_queries only then.
+  A single metric with extra conditions (thresholds, "but zero X", growth) is still ONE metric.
+- Cuts that DO NOT exist (the agent will say so, still route the metric): account-level CHURN / SWAP / NNACV / INCR_ARR (parent or product only);
+  parent ARPU; account / parent / geo / segment cuts for NACV (plan), ATTACH_RATE and UNDEPLOYED_ARR (product only; undeployed also has geo/segment).
+- Defaults: no period -> latest complete quarter; trend -> trailing 8 quarters; pipeline -> the NEXT quarter; churn risk -> two quarters after the latest complete quarter.
+- Data quirks: pipeline product names follow the sales taxonomy; renewal risk uses reporting products; the plan table also has Federal / Zscaler / blank nodes and says
+  "Security for AI" where other tables may say "AI Security".
 
 ## RULES
 - metrics_needed: include ONLY metrics from the AVAILABLE METRICS list.  Default to ["ARR"].
@@ -191,8 +244,17 @@ Analyze the question and output EXACTLY this JSON schema:
 - intent RISK: churn, at-risk, health-score questions.
 - is_followup=true only when pronouns or ordinals clearly reference prior results.
 - When is_followup=true you MUST provide resolved_question as a full standalone question.
-- sub_queries: only populate when >1 metric is genuinely needed; each entry must map to one metric.
-- is_strategic=true for advisory, budget, strategy, playbook, go-to-market questions.
+- sub_queries: only populate when >1 DIFFERENT metric is needed; never split one metric by product/account/geo (entities are already resolved and filtered for you).
+- is_strategic=true ONLY for open-ended advice that no data query can answer (how should we..., strategy, playbook, budget). A question that names metrics, filters or thresholds ("which accounts grew > 20%", "potential upsell targets", "at-risk accounts") is a DATA question: is_strategic=false.
+- clarifications: ask the user ONLY when a missing or unclear detail would change the SQL result and cannot be inferred
+  from the resolved entities, the metric catalogue or the defaults below. At most 2 questions, each with 2-4 short options
+  worded so the chosen option can be appended to the question (e.g. "for FY 2027 Q1").
+- Ambiguities already flagged above (KNOWN AMBIGUITIES, product_candidates_unresolved, unresolved accounts) are asked by the system itself — never ask about them again.
+- This is the Zscaler analytics assistant: "Zscaler" in a question means the whole dataset, not a customer — never ask about it.
+- NEVER ask about QoQ / previous quarter / YoY: QoQ = the immediately preceding quarter, YoY = the same quarter a year earlier.
+- NEVER ask about: "all L<n> level products" / "all products" (that means a breakdown by product_l<n> / product_l1);
+  a missing period (default = latest completed quarter); top-N (default 10); ARR as the default metric; geo/product/account
+  values already resolved above; wording you can simply interpret. When in doubt, do NOT ask.
 - Output ONLY the JSON object. No explanation, no markdown.
 """
     return prompt
@@ -395,6 +457,11 @@ def classify(
         except Exception:
             pass  # malformed sub_query entry — skip silently
 
+    # Same metric split by entity (e.g. ARR for ZIA / ARR for ZPA) is one query:
+    # agents already filter on every resolved entity.
+    if len({sq.metric for sq in sub_queries}) < 2:
+        sub_queries = []
+
     # -- Resolve intent enum ------------------------------------------------
     intent_raw: str = str(data.get("intent", "AGGREGATE")).upper()
     try:
@@ -403,27 +470,48 @@ def classify(
         intent = Intent.AGGREGATE
 
     # -- Merge ambiguities --------------------------------------------------
-    llm_ambiguities: list[str] = data.get("ambiguities", []) or []
-    all_ambiguities = list(dict.fromkeys(list(resolved.ambiguities or []) + llm_ambiguities))
+    clarifications: list[ClarifyQuestion] = []
+    for c in (data.get("clarifications") or [])[:2]:
+        try:
+            q = str(c.get("question", "")).strip()
+            opts = [str(o).strip() for o in (c.get("options") or []) if str(o).strip()][:4]
+            vendor = re.search(r"\bzscaler\b(?!\s+(?:internet|private|digital|cloud|data|business))",
+                               " ".join([q] + opts), re.IGNORECASE)
+            if q and not vendor:
+                clarifications.append(ClarifyQuestion(question=q, options=opts))
+        except Exception:
+            pass
+    # Ambiguities come from extraction only (it knows the real candidates); the LLM raises questions, not flags
+    all_ambiguities = list(resolved.ambiguities or [])
 
     # -- Build result -------------------------------------------------------
     try:
         classified = ClassifiedQuery(
             original_query=query,
-            metrics_needed=data.get("metrics_needed") or ["ARR"],
+            metrics_needed=_merge_tiles([m for m in (data.get("metrics_needed") or []) if m in get_registry()] or ["ARR"]),
             intent=intent,
             is_followup=bool(data.get("is_followup", False)),
             resolved_question=data.get("resolved_question") or None,
-            is_strategic=bool(data.get("is_strategic", False)),
+            is_strategic=bool(data.get("is_strategic", False)) and not _has_data_signal(query, resolved),
             sub_queries=sub_queries,
             ambiguities=all_ambiguities,
+            clarifications=clarifications,
         )
     except Exception as exc:
         return _build_fallback(query, resolved, f"model validation error: {exc}")
 
-    ok("Classifier done",
-       f"metrics={classified.metrics_needed}  intent={classified.intent}  "
-       f"followup={classified.is_followup}  strategic={classified.is_strategic}")
+    ok("Classification result")
+    entity("metrics", ", ".join(classified.metrics_needed))
+    entity("intent", str(classified.intent))
+    entity("followup", f"{classified.is_followup}"
+                       + (f"  → {classified.resolved_question!r}" if classified.resolved_question else ""))
+    entity("strategic", str(classified.is_strategic))
+    for sq in classified.sub_queries:
+        entity("sub_query", f"[{sq.id}] {sq.metric}: {sq.question}")
+    if classified.ambiguities:
+        entity("ambiguity", ", ".join(classified.ambiguities))
+    for cq in classified.clarifications:
+        entity("ask user", cq.question + (f"  [{' | '.join(cq.options)}]" if cq.options else ""))
     logger.info(
         "Classifier: metrics=%s intent=%s followup=%s strategic=%s",
         classified.metrics_needed,
